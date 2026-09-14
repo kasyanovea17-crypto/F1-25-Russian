@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "version": "0.15",
+  "min_launcher": "0.21",
+  "dat_original": "104aff4a137846ce7b2a83c7a541f58ec06bc04cb687c6f58dc38f5336cd3dc2",
+  "font_modified": "69d6abfa33ffa02ed618f615e2460dbd3d10f8ae59c4cff2262a39fadf28a522",
+  "file": "0.15/language.lng",
+  "sha256": "1dbf258f4707857fd37414f680dcdd54167ca89b4d0f6b4f99a40f32740d13e8",
+  "bytes": 11526321,
+  "records": 56134,
+  "notes": "Текст из пакета 0.15. Канал GitHub подключён; новых смысловых правок в этой сборке нет."
+}
