@@ -1,0 +1,42 @@
+﻿{
+  "schema": 10,
+  "version": "0.21",
+  "previous_lng": [
+    "8b39a89c1b88a7b4fead950e5ade103e4f0905ac38d19bb41376575488dd3347",
+    "d4c577bdc47540bd32f17c5f63045afd92445d41cad1cd9ddce4150e940db78d",
+    "1cf0970adfdf681b0d6e6a0501943106de2f010c241dad6f846143242d760c94",
+    "5b1a60cb2295794104144e3e40630b2472883ec1f077e261cd3f7852d81e9d7f",
+    "8c06bf5882fb185b4864f8e412f2de6d8bd6eb5087e88c99626113b489fee6fa"
+  ],
+  "patch_offset": 87778368,
+  "patch_bytes": 16,
+  "dat_original": "104aff4a137846ce7b2a83c7a541f58ec06bc04cb687c6f58dc38f5336cd3dc2",
+  "dat_modified": "d0b3077996cb142a8bb67eae6ee7cf0a592157b72c8a987edeb1f6b264237cc1",
+  "font_original": "a60f5a509f2fdb22ef4e5530652ef5386a065e48f75e6eeab243d32e7dada413",
+  "font_modified": "69d6abfa33ffa02ed618f615e2460dbd3d10f8ae59c4cff2262a39fadf28a522",
+  "lng": "1dbf258f4707857fd37414f680dcdd54167ca89b4d0f6b4f99a40f32740d13e8",
+  "protected": {
+    "F1_25.exe": "628361fb8bd2e40cf575bb84143bd6172565ed9f679c19abda27882d32333c06",
+    "EAAntiCheat.GameServiceLauncher.exe": "ad4b0709d9669f0d95e9c3c9b6b5ae8761f63bb7b7eff130b641eceae734b377",
+    "EAAntiCheat.cfg": "a470ffdb8b308a896eea300fa0224940ee3d3df1bd7c277a94402ad91d6530f5"
+  },
+  "payload": {
+    "config.patch": "64a47d2a972f114f4a34d047253e02668ba5c265e598d15d7bc3b099abb6fbf1",
+    "fonts_japanese.erp": "69d6abfa33ffa02ed618f615e2460dbd3d10f8ae59c4cff2262a39fadf28a522",
+    "language.lng": "1dbf258f4707857fd37414f680dcdd54167ca89b4d0f6b4f99a40f32740d13e8"
+  },
+  "semantic_import": {
+    "rows_one_based": [
+      1,
+      10000
+    ],
+    "records": 10000,
+    "changed_vs_014": 1453,
+    "complete_proofread": false,
+    "audio_context_limited": 8,
+    "source_questions": 8,
+    "method": "recheck candidate + audio passes 01/02 + editorial selections 03; not a new full audio proofread"
+  },
+  "legacy_staged_imported_keys": 11950,
+  "text_version": "0.15"
+}

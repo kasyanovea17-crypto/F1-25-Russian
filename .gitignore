@@ -1,0 +1,9 @@
+dist/
+*.exe
+*.zip
+*.tmp
+__pycache__/
+.update*/
+.f1ru*/
+.env
+*.log

@@ -1,0 +1,151 @@
+{
+  "eight_editorial_decisions": [
+    {
+      "row": 4,
+      "key": "lng_subtitle_law_q_p20_nld_23_03",
+      "en": "I didn't go far enough.",
+      "before": "Мне не удалось пройти дальше.",
+      "after": "Я не смог пройти достаточно далеко.",
+      "note": "Сохранено значение недостаточно далеко, без утверждения о выходе в следующую часть квалификации.",
+      "status": "editorial_selection_not_context_verified"
+    },
+    {
+      "row": 653,
+      "key": "lng_subtitle_ver_r_p1_can_24_05",
+      "en": "Yeah… it's, that's a shame that... yeah, we fell out so… still a good result.",
+      "before": "Да… Жаль, что всё так вышло, но результат всё равно хороший.",
+      "after": "Да… Жаль, что всё так вышло, но результат всё равно хороший.",
+      "note": "Сохранён нейтральный вариант сожаления; объект fell out не назван. Смысл этой части источника остаётся неясным.",
+      "status": "editorial_selection_not_context_verified"
+    },
+    {
+      "row": 1852,
+      "key": "lng_subtitle_tsu_sq_p19_usa_23_03",
+      "en": "Yeah, it's already out, I don't care.",
+      "before": "Да, это уже прозвучало, мне всё равно.",
+      "after": "Да, уже всё. Мне всё равно.",
+      "note": "Убрана неподтверждённая конкретизация «прозвучало». Нейтральное «уже всё» — компромисс с потерей оттенка out; точный референт по-прежнему не установлен.",
+      "status": "editorial_selection_not_context_verified"
+    },
+    {
+      "row": 4015,
+      "key": "lng_subtitle_lec_sq_p1_aze_23_01",
+      "en": "Ah, sorry for Carlos.",
+      "before": "Жаль Карлоса.",
+      "after": "Эх, жаль Карлоса.",
+      "note": "Сохранено сожаление о Карлосе, добавлено междометие Ah. Это редакторский выбор; оттенок извинения остаётся возможным.",
+      "status": "editorial_selection_not_context_verified"
+    },
+    {
+      "row": 4835,
+      "key": "lng_subtitle_had_fp1_uae_23_03",
+      "en": "Any other... any other threats?",
+      "before": "Есть ещё… ещё что-то, чего стоит опасаться?",
+      "after": "Есть ещё… ещё что-то, чего стоит опасаться?",
+      "note": "Сохранён общий вопрос об опасности без выдуманного уточнения о трафике или поломке.",
+      "status": "editorial_selection_not_context_verified"
+    },
+    {
+      "row": 6674,
+      "key": "lng_subtitle_alo_q_p4_qat_23_02",
+      "en": "If there is anything to review: P5? I will take it.",
+      "before": "Есть ещё что пересматривать? Пятое место? Меня устраивает.",
+      "after": "Если есть что пересмотреть… Пятое место? Меня устраивает.",
+      "note": "Восстановлена условная конструкция If, которую прежний вариант превращал в самостоятельный вопрос. Связь с пересмотром результата остаётся неуточнённой.",
+      "status": "editorial_selection_not_context_verified"
+    },
+    {
+      "row": 6985,
+      "key": "lng_subtitle_apex_ch0_01_015",
+      "en": "Cross round on Brooklands,\r\neasy on Luffield.",
+      "before": "Проходим Бруклендс,\r\nв Лаффилде — аккуратно.",
+      "after": "Проходим Бруклендс,\r\nв Лаффилде — аккуратно.",
+      "note": "Сохранён нейтральный проход Бруклендса. Противоречащие друг другу переводы других языков не дают основания добавлять торможение или боковой ветер.",
+      "status": "editorial_selection_not_context_verified"
+    },
+    {
+      "row": 8488,
+      "key": "lng_subtitle_rus_r_resp_aut_24_03",
+      "en": "I am already.",
+      "before": "Я уже.",
+      "after": "Уже.",
+      "note": "Короткий ответ «Уже» естественнее «Я уже» и не додумывает действие или состояние.",
+      "status": "editorial_selection_not_context_verified"
+    }
+  ],
+  "source_issues": [
+    {
+      "row": 1912,
+      "key": "lng_cs_tyres_desc",
+      "status": "source_issue",
+      "note": "Уточнены отзывчивость машины и вероятностное can also reduce: исходник не гарантирует прибавку скорости. Термин softer сохранён без домысла о составе резины. Объяснение связи мягкости, давления и температуры требует отдельной проверки исходного игрового описания.",
+      "changed": true,
+      "en": "Softer tyres have a larger surface area meaning traction is improved at a cost to responsiveness in high load situations. An increase in tyre pressure can also reduce rolling resistance meaning a very slight improvement in straight line speed. Lower tyre pressure also contributes to higher tyre temperatures.",
+      "ru": "Более мягкие шины имеют большее пятно контакта, что улучшает сцепление, но снижает отзывчивость машины при высоких нагрузках. Повышение давления в шинах может уменьшить сопротивление качению и дать небольшую прибавку к скорости на прямых. Понижение давления также способствует росту температуры шин."
+    },
+    {
+      "row": 2330,
+      "key": "lng_ent_circuits_brazil_location_body",
+      "status": "source_issue",
+      "note": "Устранена неграмотная конструкция «Из третьей передачи»: речь о выходе из поворота на третьей передаче. Направления поворотов, их последовательность и исторические скорости не исправлялись на глаз. Описание Ferradura и последовательность Senna S в исходнике остаются вопросом к автору текста; нужна сверка карты соответствующей конфигурации.",
+      "changed": true,
+      "en": "Acting as part of a double-header with the Mexico City circuit, this Brazilian gem gives the closing rounds of the World Championship a more organic and intimate feel, because they are most certainly not modern autodromes. Instead, they are tight and challenging, with the grandstands close to the action. \r\n\r\nThe first corner is a tricky one with which to start the lap. The track turns sharp left and down as it passes the end of the pit wall and the exit is unseen on arrival. Many a driver pushed onto the outside line on lap 1 will lose places by the handful as they recover. \r\n\r\nThe next two corners, the Senna S, push the cars into a compression and spit them out again onto an appreciable straight down the slope to the Descida do Lago left-handers. These are approached at 193mph (310kph) and entered at 100mph (160kph) in fourth gear, with a good balance essential to carry as much of that momentum as possible into the left-hander that starts the climb to the back of the paddock. \r\n\r\nFerradura turns the drivers left before tighter Laranja drops them back down again. Pinheirinho redirects them up again to Cotovelo, out of which there’s a wonderful downhill sweep to Juncao. \r\n\r\nFrom third gear Juncao, it’s then a flat-out run through two kinks onto the start/ finish straight where the cars hit 196mph (315kph), hemmed in by concrete walls on either side. The drivers then have to brake heavily to get their cars down to 65mph (105kph) in third gear for turn 1. Overtaking is a definite possibility here, but it’s far from a given that it will work.",
+      "ru": "Этот бразильский этап проходит следом за гонкой в Мехико и придаёт финальной части чемпионата более живую и камерную атмосферу. Это не современный автодром: трасса тесная и сложная, а трибуны расположены совсем рядом.\r\n\r\nПервый поворот сразу испытывает пилотов. За концом пит-уолла трасса резко уходит влево и вниз, а выход при входе не виден. На первом круге гонщики, оказавшиеся на внешней траектории, нередко теряют сразу несколько позиций.\r\n\r\nСледующие два поворота образуют «Эски Сенны»: болиды ныряют в низину и вылетают на заметную прямую под уклон к левым поворотам Descida do Lago. Торможение начинается примерно с 193 миль/ч (310 км/ч), а вход проходит на 100 миль/ч (160 км/ч) на четвёртой передаче. Правильный баланс помогает сохранить скорость перед левым поворотом, с которого начинается подъём к дальней стороне паддока.\r\n\r\nFerradura уводит трассу влево, более тесный Laranja снова направляет вниз, а Pinheirinho — вверх к Cotovelo. После него следует великолепный спуск к Juncao.\r\n\r\nВыйдя из Juncao на третьей передаче, пилоты разгоняются на полном газу и через два плавных изгиба выходят на стартовую прямую, достигая 196 миль/ч (315 км/ч) между бетонными стенами. Затем приходится резко тормозить до 65 миль/ч (105 км/ч) и третьей передачи перед первым поворотом. Обгон здесь возможен, но успех совсем не гарантирован."
+    },
+    {
+      "row": 3489,
+      "key": "lng_subtitle_com1_alt1_trackintro_esp_gen_02",
+      "status": "source_issue",
+      "note": "Перевод сохраняет озвученное описание старой конфигурации с шиканой 14–15. Обновлять геометрию только в субтитрах означало бы расхождение с речью. Требуется определить, для какой конфигурации игра использует этот аудиофайл.",
+      "changed": false,
+      "en": "The circuit of Barcelona-Catalunya runs to 2.9 miles. It's a heady mix of high and low speed corners. Look out for the high downforce arc of turn three, the two DRS zones and the chicane at turns 14 and 15.",
+      "ru": "Трасса «Барселона-Каталония» длиной 2,9 мили сочетает быстрые и медленные повороты. Обратите внимание на затяжной третий поворот, требующий высокой прижимной силы, две зоны DRS и шикану в поворотах 14 и 15."
+    },
+    {
+      "row": 4612,
+      "key": "lng_mod_abilitymod_pittraining_fastestsector1",
+      "status": "source_issue",
+      "note": "Условие after pitting сохранено по видимому английскому тексту. Суффикс ключа fastestsector1 противоречит ему, но ключ не является достаточным основанием для замены условия. Значение Pit Speed и фактический триггер требуют проверки карточки в игре.",
+      "changed": false,
+      "en": "+[0] Pit Speed for [1]s after pitting",
+      "ru": "+[0] к скорости пит-стопа на [1] с после пит-стопа"
+    },
+    {
+      "row": 7392,
+      "key": "lng_subtitle_eng_plbw_dam_11_pit",
+      "status": "source_issue",
+      "note": "Сглажена команда инженера без изменения содержания: исходник прямо обещает начать ремонт понтонов. ASR подтверждает эту реплику, но не игровую возможность ремонта. Проверку механики нельзя выдать за проверку перевода.",
+      "changed": true,
+      "en": "The side pods are showing heavy damage, box now so we can begin repairs.",
+      "ru": "Боковые понтоны серьёзно повреждены. Заезжай в боксы сейчас, чтобы мы могли начать ремонт."
+    },
+    {
+      "row": 7879,
+      "key": "lng_subtitle_eng_plub_dam_09_pit",
+      "status": "source_issue",
+      "note": "Днище и вызов на ремонт прямо присутствуют в тексте и ASR. Перевод сохранён; возможность ремонта днища в конкретном режиме не проверена.",
+      "changed": false,
+      "en": "OK mate, the floor's seriously damaged, box now for repairs. Box now.",
+      "ru": "Дружище, днище серьёзно повреждено. Заезжай в боксы на ремонт. В боксы сейчас."
+    },
+    {
+      "row": 9080,
+      "key": "lng_mod_abilitymod_reardownforce_fastestsector1",
+      "status": "source_issue",
+      "note": "После первого сектора соответствует after sector 1. Условие «лучший первый сектор» не добавляется только на основании имени ключа fastestsector1. Несогласованность ключа и описания требует проверки фактического триггера в игре.",
+      "changed": false,
+      "en": "+[0] Rear Downforce for [1]s after sector 1",
+      "ru": "+[0] к задней прижимной силе на [1] с после первого сектора"
+    },
+    {
+      "row": 9593,
+      "key": "lng_leagues_settings_hint_parc_ferme_body",
+      "status": "source_issue",
+      "note": "Длинная фраза разделена, область действия правил стала понятнее. Привязка к третьей тренировке сохранена именно как свойство исходного игрового режима; она не объявляется актуальным универсальным правилом реального чемпионата.",
+      "changed": true,
+      "en": "With this setting on Parc Fermé rules will be enforced. These rules prevent significant changes being made to the car setup for the rest of the weekend once the car leaves the garage for the first time during practice 3 or at the end of that session.",
+      "ru": "Включает правила закрытого парка, которые запрещают существенно менять настройки машины до конца уик-энда. Они вступают в силу при первом выезде машины из гаража на третьей тренировке или по окончании этой сессии."
+    }
+  ],
+  "full_audio_context_verified": false
+}
