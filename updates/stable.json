@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "version": "0.15",
+  "version": "0.15.3",
   "min_launcher": "0.21",
   "dat_original": "104aff4a137846ce7b2a83c7a541f58ec06bc04cb687c6f58dc38f5336cd3dc2",
   "font_modified": "69d6abfa33ffa02ed618f615e2460dbd3d10f8ae59c4cff2262a39fadf28a522",
-  "file": "0.15/language.lng",
-  "sha256": "1dbf258f4707857fd37414f680dcdd54167ca89b4d0f6b4f99a40f32740d13e8",
-  "bytes": 11526321,
+  "file": "0.15.3/language.lng",
+  "sha256": "e121be4a39a786c8e28a64fd190bf17e2a02b68140b1b28adcae81eee9da1c05",
+  "bytes": 9560625,
   "records": 56134,
-  "notes": "Текст из пакета 0.15. Канал GitHub подключён; новых смысловых правок в этой сборке нет."
+  "notes": "Авторские правки строк 10000–30000 по английской нумерации: 20001 запись без пропусков. Формулировки сохранены. Лаунчер 0.21 менять не требуется."
 }
