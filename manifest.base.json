@@ -1,4 +1,4 @@
-﻿{
+{
   "schema": 10,
   "version": "0.21",
   "previous_lng": [
@@ -6,7 +6,10 @@
     "d4c577bdc47540bd32f17c5f63045afd92445d41cad1cd9ddce4150e940db78d",
     "1cf0970adfdf681b0d6e6a0501943106de2f010c241dad6f846143242d760c94",
     "5b1a60cb2295794104144e3e40630b2472883ec1f077e261cd3f7852d81e9d7f",
-    "8c06bf5882fb185b4864f8e412f2de6d8bd6eb5087e88c99626113b489fee6fa"
+    "8c06bf5882fb185b4864f8e412f2de6d8bd6eb5087e88c99626113b489fee6fa",
+    "1dbf258f4707857fd37414f680dcdd54167ca89b4d0f6b4f99a40f32740d13e8",
+    "cfe0a0bb5db47707c9822572c62fcf206d351a9f2cef82a999777c449aac905e",
+    "6a3b951d07d3b77dfdced827e0d1422dfa49bc82868c5101075153a7ef84fe7e"
   ],
   "patch_offset": 87778368,
   "patch_bytes": 16,
@@ -14,7 +17,7 @@
   "dat_modified": "d0b3077996cb142a8bb67eae6ee7cf0a592157b72c8a987edeb1f6b264237cc1",
   "font_original": "a60f5a509f2fdb22ef4e5530652ef5386a065e48f75e6eeab243d32e7dada413",
   "font_modified": "69d6abfa33ffa02ed618f615e2460dbd3d10f8ae59c4cff2262a39fadf28a522",
-  "lng": "1dbf258f4707857fd37414f680dcdd54167ca89b4d0f6b4f99a40f32740d13e8",
+  "lng": "e121be4a39a786c8e28a64fd190bf17e2a02b68140b1b28adcae81eee9da1c05",
   "protected": {
     "F1_25.exe": "628361fb8bd2e40cf575bb84143bd6172565ed9f679c19abda27882d32333c06",
     "EAAntiCheat.GameServiceLauncher.exe": "ad4b0709d9669f0d95e9c3c9b6b5ae8761f63bb7b7eff130b641eceae734b377",
@@ -23,7 +26,7 @@
   "payload": {
     "config.patch": "64a47d2a972f114f4a34d047253e02668ba5c265e598d15d7bc3b099abb6fbf1",
     "fonts_japanese.erp": "69d6abfa33ffa02ed618f615e2460dbd3d10f8ae59c4cff2262a39fadf28a522",
-    "language.lng": "1dbf258f4707857fd37414f680dcdd54167ca89b4d0f6b4f99a40f32740d13e8"
+    "language.lng": "e121be4a39a786c8e28a64fd190bf17e2a02b68140b1b28adcae81eee9da1c05"
   },
   "semantic_import": {
     "rows_one_based": [
@@ -38,5 +41,105 @@
     "method": "recheck candidate + audio passes 01/02 + editorial selections 03; not a new full audio proofread"
   },
   "legacy_staged_imported_keys": 11950,
-  "text_version": "0.15"
+  "text_version": "0.15.3",
+  "author_import": {
+    "rows_one_based": [
+      16000,
+      17000
+    ],
+    "numbering": "original English resource",
+    "records": 1001,
+    "changed": 862,
+    "identical_boundary_duplicates": 0,
+    "matching_prior_boundary_rows": [
+      16000,
+      17000
+    ],
+    "author_reviewed": true,
+    "assistant_semantic_edits": 0,
+    "technical_validation": "keys, tokens, UTF-8, newline roundtrip and all records",
+    "sources": [
+      {
+        "name": "F1_25_RU_16000-17000_EN_numbering_reviewed.txt",
+        "sha256": "13c38baf7b08c4ad2c0ce80952829746fadbe8d4635994700b2d6c1c53009432"
+      }
+    ]
+  },
+  "author_import_history": [
+    {
+      "rows_one_based": [
+        10000,
+        16000
+      ],
+      "numbering": "original English resource",
+      "records": 6001,
+      "changed": 4924,
+      "identical_boundary_duplicates": 4,
+      "author_reviewed": true,
+      "assistant_semantic_edits": 0,
+      "technical_validation": "keys, tokens, UTF-8, newline roundtrip and all records",
+      "sources": [
+        {
+          "name": "F1_25_RU_10000-10500_EN_numbering_reviewed.txt",
+          "sha256": "24ab3f79331fc8708d14a9bec457b0a9b4bcd08e41739d2df3deaa6a9689ba0a"
+        },
+        {
+          "name": "F1_25_RU_10500-11500_EN_numbering_reviewed.txt",
+          "sha256": "516b850f0061ef2cfe81bbe8fa1a708c0a09f47ed84b46b6eed3e4d7a03a1b6c"
+        },
+        {
+          "name": "F1_25_RU_11500-13000_EN_numbering_reviewed.txt",
+          "sha256": "1e5addfae8601a1f9ef1d3a0b9a92acb0debf062d9d3e5e7a6fe734f7a97ad1c"
+        },
+        {
+          "name": "F1_25_RU_13000-14000_EN_numbering_reviewed.txt",
+          "sha256": "bbed528051b36962765078bfdbafe30c910213cf415758263370e840ef21cfcc"
+        },
+        {
+          "name": "F1_25_RU_14000-16000_EN_numbering_reviewed.txt",
+          "sha256": "a6dba2cd34e7ba043bd496d9904a3351fe55cfe3e81669a14274e9e92fcc4d73"
+        }
+      ]
+    },
+    {
+      "rows_one_based": [
+        17000,
+        30000
+      ],
+      "numbering": "original English resource",
+      "records": 13001,
+      "changed": 11188,
+      "identical_boundary_duplicates": 3,
+      "author_reviewed": true,
+      "assistant_semantic_edits": 0,
+      "technical_validation": "keys, tokens, UTF-8, newline roundtrip and all records",
+      "sources": [
+        {
+          "name": "F1_25_RU_17000-20000_EN_numbering_reviewed.txt",
+          "sha256": "75bc36e04ec11186a5be4f9ed4d585ec2364745691915e0da4872e9cdb412e0d"
+        },
+        {
+          "name": "F1_25_RU_20000-22000_EN_numbering_reviewed.txt",
+          "sha256": "b41c43d19cad81664133350b15ee746a4aa10b61e265995537e88cec135b5afa"
+        },
+        {
+          "name": "F1_25_RU_22000-25000_EN_numbering_reviewed.txt",
+          "sha256": "5f0735446a11bedcda79afbd9e9d51b37c902ac1d8ab51970c56d0a3dd160b6c"
+        },
+        {
+          "name": "F1_25_RU_25000-30000_EN_numbering_reviewed.txt",
+          "sha256": "fa308770fa03b1fad8312b0ca1fa5d6d7d1382952230557991cbb08296836a90"
+        }
+      ]
+    }
+  ],
+  "author_coverage": {
+    "rows_one_based": [
+      10000,
+      30000
+    ],
+    "records": 20001,
+    "gaps": [],
+    "assistant_semantic_edits": 0
+  }
 }

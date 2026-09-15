@@ -147,5 +147,94 @@
       "ru": "Включает правила закрытого парка, которые запрещают существенно менять настройки машины до конца уик-энда. Они вступают в силу при первом выезде машины из гаража на третьей тренировке или по окончании этой сессии."
     }
   ],
-  "full_audio_context_verified": false
+  "full_audio_context_verified": false,
+  "author_import_10000_16000": {
+    "rows_one_based": [
+      10000,
+      16000
+    ],
+    "numbering": "original English resource",
+    "records": 6001,
+    "changed": 4924,
+    "identical_boundary_duplicates": 4,
+    "author_reviewed": true,
+    "assistant_semantic_edits": 0,
+    "technical_validation": "keys, tokens, UTF-8, newline roundtrip and all records",
+    "sources": [
+      {
+        "name": "F1_25_RU_10000-10500_EN_numbering_reviewed.txt",
+        "sha256": "24ab3f79331fc8708d14a9bec457b0a9b4bcd08e41739d2df3deaa6a9689ba0a"
+      },
+      {
+        "name": "F1_25_RU_10500-11500_EN_numbering_reviewed.txt",
+        "sha256": "516b850f0061ef2cfe81bbe8fa1a708c0a09f47ed84b46b6eed3e4d7a03a1b6c"
+      },
+      {
+        "name": "F1_25_RU_11500-13000_EN_numbering_reviewed.txt",
+        "sha256": "1e5addfae8601a1f9ef1d3a0b9a92acb0debf062d9d3e5e7a6fe734f7a97ad1c"
+      },
+      {
+        "name": "F1_25_RU_13000-14000_EN_numbering_reviewed.txt",
+        "sha256": "bbed528051b36962765078bfdbafe30c910213cf415758263370e840ef21cfcc"
+      },
+      {
+        "name": "F1_25_RU_14000-16000_EN_numbering_reviewed.txt",
+        "sha256": "a6dba2cd34e7ba043bd496d9904a3351fe55cfe3e81669a14274e9e92fcc4d73"
+      }
+    ]
+  },
+  "author_import_17000_30000": {
+    "rows_one_based": [
+      17000,
+      30000
+    ],
+    "numbering": "original English resource",
+    "records": 13001,
+    "changed": 11188,
+    "identical_boundary_duplicates": 3,
+    "author_reviewed": true,
+    "assistant_semantic_edits": 0,
+    "technical_validation": "keys, tokens, UTF-8, newline roundtrip and all records",
+    "sources": [
+      {
+        "name": "F1_25_RU_17000-20000_EN_numbering_reviewed.txt",
+        "sha256": "75bc36e04ec11186a5be4f9ed4d585ec2364745691915e0da4872e9cdb412e0d"
+      },
+      {
+        "name": "F1_25_RU_20000-22000_EN_numbering_reviewed.txt",
+        "sha256": "b41c43d19cad81664133350b15ee746a4aa10b61e265995537e88cec135b5afa"
+      },
+      {
+        "name": "F1_25_RU_22000-25000_EN_numbering_reviewed.txt",
+        "sha256": "5f0735446a11bedcda79afbd9e9d51b37c902ac1d8ab51970c56d0a3dd160b6c"
+      },
+      {
+        "name": "F1_25_RU_25000-30000_EN_numbering_reviewed.txt",
+        "sha256": "fa308770fa03b1fad8312b0ca1fa5d6d7d1382952230557991cbb08296836a90"
+      }
+    ]
+  },
+  "author_import_16000_17000": {
+    "rows_one_based": [
+      16000,
+      17000
+    ],
+    "numbering": "original English resource",
+    "records": 1001,
+    "changed": 862,
+    "identical_boundary_duplicates": 0,
+    "matching_prior_boundary_rows": [
+      16000,
+      17000
+    ],
+    "author_reviewed": true,
+    "assistant_semantic_edits": 0,
+    "technical_validation": "keys, tokens, UTF-8, newline roundtrip and all records",
+    "sources": [
+      {
+        "name": "F1_25_RU_16000-17000_EN_numbering_reviewed.txt",
+        "sha256": "13c38baf7b08c4ad2c0ce80952829746fadbe8d4635994700b2d6c1c53009432"
+      }
+    ]
+  }
 }
