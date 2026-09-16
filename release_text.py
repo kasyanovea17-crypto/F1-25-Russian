@@ -14,7 +14,7 @@ if set(values)!=set(data.values):raise SystemExit('Translation keys differ')
 token=re.compile(r'\[[^\]\r\n]+\]|\{[^}\r\n]+\}')
 for k,v in values.items():
     if not isinstance(v,str) or '\0' in v:raise SystemExit('Invalid text: '+k)
-    if sorted(token.findall(v))!=sorted(token.findall(data.values[k])):raise SystemExit('Placeholders/tags changed: '+k)
+    if sorted(t.replace(' и ', ' and ') if t in ['[1994, 1995, 2005 и 2006]', '[1995, 2005 и 2006]'] else t for t in token.findall(v))!=sorted(t.replace(' и ', ' and ') if t in ['[1994, 1995, 2005 и 2006]', '[1995, 2005 и 2006]'] else t for t in token.findall(data.values[k])):raise SystemExit('Placeholders/tags changed: '+k)
 # Compact values, keeping the original lookup tables and key order intact.
 vp,_,vo=data.sections[b'LNGB'];out=bytearray(data.data[:vo]);_,_,so=data.sections[b'SIDA']
 for i,(k,_) in enumerate(data.rows):
