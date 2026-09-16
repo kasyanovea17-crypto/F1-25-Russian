@@ -1,6 +1,6 @@
-{
+﻿{
   "schema": 10,
-  "version": "0.21",
+  "version": "0.22",
   "previous_lng": [
     "8b39a89c1b88a7b4fead950e5ade103e4f0905ac38d19bb41376575488dd3347",
     "d4c577bdc47540bd32f17c5f63045afd92445d41cad1cd9ddce4150e940db78d",
@@ -239,5 +239,15 @@
     "records": 46135,
     "gaps": [],
     "assistant_semantic_edits": 0
-  }
+  },
+  "game_builds": [
+    {
+      "steam_build": "25251167",
+      "exe_sha256": "d873a1c8d2044cef2fd76c99c9d5a97649c5b815d055540995105f46619865ae",
+      "dat_original": "98c9e8a158badcc5c0e9b312af1fac048a6c35ef39a9385f85a70cacde753014",
+      "dat_modified": "48178d3f5e6ea8a5ce739740affed54aa30a0c75cff2bac14d5bfc5733a9deb9",
+      "patch_offset": 87778368,
+      "backup_dir": ".f1ru-v10-build25251167"
+    }
+  ]
 }

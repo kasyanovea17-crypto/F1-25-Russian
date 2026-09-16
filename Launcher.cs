@@ -56,7 +56,7 @@ sealed class Launcher : Form {
  [System.Runtime.InteropServices.DllImport("user32.dll")]static extern bool ReleaseCapture();
  [System.Runtime.InteropServices.DllImport("user32.dll")]static extern IntPtr SendMessage(IntPtr h,int m,IntPtr w,IntPtr l);
  Launcher(){
-  Glyphs.Load(home);Text="F1 25 · Русский текст · 0.21";ClientSize=new Size(960,680);FormBorderStyle=FormBorderStyle.None;StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;BackColor=Color.Black;ForeColor=Color.Black;Font=new Font("Segoe UI",9.5f);DoubleBuffered=true;
+  Glyphs.Load(home);Text="F1 25 · Русский текст · 0.22";ClientSize=new Size(960,680);FormBorderStyle=FormBorderStyle.None;StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;BackColor=Color.Black;ForeColor=Color.Black;Font=new Font("Segoe UI",9.5f);DoubleBuffered=true;
   if(File.Exists(Path.Combine(home,"background.png")))using(var image=Image.FromFile(Path.Combine(home,"background.png")))backdrop=new Bitmap(image);
   using(var clip=Shape.Round(ClientRectangle,36))Region=new Region(clip);
   MouseDown+=(s,e)=>{if(e.Button==MouseButtons.Left){ReleaseCapture();SendMessage(Handle,0xA1,new IntPtr(2),IntPtr.Zero);}};
@@ -87,7 +87,7 @@ sealed class Launcher : Form {
   LabelAt(tip,"Японский язык — основа пакета.\n\nМеняются текст и субтитры.\nГолоса остаются оригинальными.\n\nЗапускайте игру через Steam.",20,52,234,104,9,FontStyle.Regular,muted);
   help=ButtonAt(this,"Руководство в Steam",650,533,270,38,false,0xf194);help.Click+=(s,e)=>OpenContact(GuideUrl);
   packageVersion=LabelAt(this,"",653,590,272,22,9,FontStyle.Regular,muted);
-  LabelAt(this,"Лаунчер 0.21",653,612,266,22,9,FontStyle.Bold,Color.Black);
+  LabelAt(this,"Лаунчер 0.22",653,612,266,22,9,FontStyle.Bold,Color.Black);
   LabelAt(this,"Разработано Karsvein",653,635,266,22,9,FontStyle.Regular,muted);
   BuildInstall();BuildUpdates();BuildRestore();BuildHelp();BuildLog();BuildAbout();ShowPage("install");RefreshVersions();RefreshControls();
   path.TabIndex=0;browse.TabIndex=1;ready.TabIndex=2;prepare.TabIndex=3;install.TabIndex=4;

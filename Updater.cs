@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -12,7 +12,7 @@ using System.Web.Script.Serialization;
 sealed class TextUpdate {
  public const string Repository="https://github.com/kasyanovea17-crypto/F1-25-Russian";
  public const string Channel="https://raw.githubusercontent.com/kasyanovea17-crypto/F1-25-Russian/main/updates/";
- public const string LauncherVersion="0.21";
+ public const string LauncherVersion="0.22";
  public string Version,Hash,Notes,Url; public int Bytes; public bool Available;
 }
 static class Updates {
@@ -28,7 +28,7 @@ static class Updates {
  public static byte[] Download(string url,int maximum){
   var u=new Uri(url);Require(u.Scheme=="https"&&u.Host=="raw.githubusercontent.com"&&u.AbsoluteUri.StartsWith(TextUpdate.Channel,StringComparison.Ordinal),"Источник обновления не совпадает с репозиторием.");
   ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
-  var r=(HttpWebRequest)WebRequest.Create(u);r.UserAgent="F1RU-Launcher/0.21";r.Timeout=30000;r.ReadWriteTimeout=30000;r.AllowAutoRedirect=false;
+  var r=(HttpWebRequest)WebRequest.Create(u);r.UserAgent="F1RU-Launcher/0.22";r.Timeout=30000;r.ReadWriteTimeout=30000;r.AllowAutoRedirect=false;
   using(var response=(HttpWebResponse)r.GetResponse()){
    Require(response.StatusCode==HttpStatusCode.OK,"GitHub не вернул файл обновления.");Require(response.ContentLength<=maximum,"Размер загрузки превышает предел.");
    using(var s=response.GetResponseStream())using(var output=new MemoryStream()){
