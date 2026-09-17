@@ -29,12 +29,12 @@ try{
   if($profiles.Count -ne 1){throw 'Версия или состояние файла не поддерживается: F1_25.exe'}
   $profile=$profiles[0]
   if($profile.backup_dir -notmatch '^\.f1ru-v10-build[0-9]+$'){throw 'Неверный профиль резервной копии.'}
-  $m.protected.'F1_25.exe'=$profile.exe_sha256;$m.dat_original=$profile.dat_original;$m.dat_modified=$profile.dat_modified;$m.patch_offset=$profile.patch_offset;$backupName=$profile.backup_dir
+  if($profile.protected){foreach($q in $profile.protected.PSObject.Properties){$m.protected.($q.Name)=@($q.Value)}}else{$m.protected.'F1_25.exe'=$profile.exe_sha256};$m.dat_original=$profile.dat_original;$m.dat_modified=$profile.dat_modified;$m.patch_offset=$profile.patch_offset;$backupName=$profile.backup_dir
  }
  $dat=Inside 'game.dat';$font=Inside '2025_asset_groups\ui_package\fonts_japanese.erp'
  $jp=Inside 'localisation\2025_russian\language_jap.lng';$en=Inside 'localisation\2025_russian\language_eng.lng'
  $backup=Inside $backupName;$statePath=Inside ($backupName+'\state.json')
- foreach($p in $m.protected.PSObject.Properties){if((Hash (Inside $p.Name)) -ne $p.Value){throw ('Версия или состояние файла не поддерживается: '+$p.Name)}}
+ foreach($p in $m.protected.PSObject.Properties){if((Hash (Inside $p.Name)) -notin @($p.Value)){throw ('Версия или состояние файла не поддерживается: '+$p.Name)}}
  if(!$TestMode -and (Get-Process -Name F1_25 -ErrorAction SilentlyContinue)){throw 'Сначала закройте F1 25.'}
  $dh=Hash $dat;$fh=Hash $font
  if($dh -notin @($m.dat_original,$m.dat_modified) -or $fh -notin @($m.font_original,$m.font_modified)){throw 'Нужны исходные файлы поддерживаемой версии. Сохраните моды и восстановите файлы через Steam.'}
@@ -81,7 +81,7 @@ try{
    foreach($p in @($jp,$en)){if(Test-Path -LiteralPath $p){[IO.File]::Delete($p)}}
    if((Hash $dat) -ne $m.dat_original -or (Hash $font) -ne $m.font_original -or (Test-Path -LiteralPath $jp) -or (Test-Path -LiteralPath $en)){throw 'Проверка восстановления не пройдена.'}
   }
-  foreach($p in $m.protected.PSObject.Properties){if((Hash (Inside $p.Name)) -ne $p.Value){throw 'Состояние игры изменилось во время операции.'}}
+  foreach($p in $m.protected.PSObject.Properties){if((Hash (Inside $p.Name)) -notin @($p.Value)){throw 'Состояние игры изменилось во время операции.'}}
   @{schema=10;root=$root;status=$Action;version=$m.version;online_verified=$false}|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $txn 'state.json') -Encoding UTF8
   Put (Join-Path $txn 'state.json') $statePath;$committed=$true
  }finally{

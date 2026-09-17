@@ -1,6 +1,6 @@
 ﻿{
   "schema": 10,
-  "version": "0.22",
+  "version": "0.23",
   "previous_lng": [
     "8b39a89c1b88a7b4fead950e5ade103e4f0905ac38d19bb41376575488dd3347",
     "d4c577bdc47540bd32f17c5f63045afd92445d41cad1cd9ddce4150e940db78d",
@@ -247,7 +247,19 @@
       "dat_original": "98c9e8a158badcc5c0e9b312af1fac048a6c35ef39a9385f85a70cacde753014",
       "dat_modified": "48178d3f5e6ea8a5ce739740affed54aa30a0c75cff2bac14d5bfc5733a9deb9",
       "patch_offset": 87778368,
-      "backup_dir": ".f1ru-v10-build25251167"
+      "backup_dir": ".f1ru-v10-build25251167",
+      "protected": {
+        "F1_25.exe": [
+          "d873a1c8d2044cef2fd76c99c9d5a97649c5b815d055540995105f46619865ae"
+        ],
+        "EAAntiCheat.GameServiceLauncher.exe": [
+          "ad4b0709d9669f0d95e9c3c9b6b5ae8761f63bb7b7eff130b641eceae734b377",
+          "bf75213a80d9bcd9d22d0f081ed7ee775cf8e34c6a13407047a75e8c4a319241"
+        ],
+        "EAAntiCheat.cfg": [
+          "a470ffdb8b308a896eea300fa0224940ee3d3df1bd7c277a94402ad91d6530f5"
+        ]
+      }
     }
   ]
 }
