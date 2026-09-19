@@ -12,7 +12,7 @@ using System.Web.Script.Serialization;
 sealed class TextUpdate {
  public const string Repository="https://github.com/kasyanovea17-crypto/F1-25-Russian";
  public const string Channel="https://raw.githubusercontent.com/kasyanovea17-crypto/F1-25-Russian/main/updates/";
- public const string LauncherVersion="0.23";
+ public const string LauncherVersion="0.25";
  public string Version,Hash,Notes,Url; public int Bytes; public bool Available;
 }
 static class Updates {
@@ -22,13 +22,27 @@ static class Updates {
  public static string Field(Dictionary<string,object> d,string k){return Convert.ToString(d[k]);}
  public static string Hash(string p){using(var a=SHA256.Create())using(var s=File.OpenRead(p))return BitConverter.ToString(a.ComputeHash(s)).Replace("-","").ToLowerInvariant();}
  static void Write(string p,Dictionary<string,object> d){File.WriteAllText(p,Json.Serialize(d),new UTF8Encoding(true));}
+ // Preserve the complete local install contract, including native font/profile
+ // metadata and patch lists. A remote text channel may change four fields only.
+ static string InstallContract(Dictionary<string,object> manifest){
+  var copy=Parse(Json.Serialize(manifest));
+  copy.Remove("previous_lng");copy.Remove("lng");copy.Remove("text_version");
+  object raw;Require(copy.TryGetValue("payload",out raw)&&raw is Dictionary<string,object>,"Повреждено описание файлов пакета.");
+  ((Dictionary<string,object>)raw).Remove("language.lng");return Json.Serialize(copy);
+ }
+ static void WriteTextManifest(string file,Dictionary<string,object> manifest,string contract){
+  Require(InstallContract(manifest)==contract,"Обновление изменяет параметры установки. Операция остановлена.");
+  Write(file,manifest);
+  Require(InstallContract(Read(file))==contract,"Параметры установки не прошли проверку после записи.");
+ }
+
  static Version V(string s){Version v;if(!Version.TryParse(s,out v)||v.Major<0)throw new InvalidDataException("Неверный номер версии.");return v;}
  static void Require(bool ok,string error){if(!ok)throw new InvalidDataException(error);}
  public static string LocalVersion(string home){try{var m=Read(Path.Combine(home,"manifest.json"));return m.ContainsKey("text_version")?Field(m,"text_version"):"0.15";}catch{return "—";}}
  public static byte[] Download(string url,int maximum){
   var u=new Uri(url);Require(u.Scheme=="https"&&u.Host=="raw.githubusercontent.com"&&u.AbsoluteUri.StartsWith(TextUpdate.Channel,StringComparison.Ordinal),"Источник обновления не совпадает с репозиторием.");
   ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
-  var r=(HttpWebRequest)WebRequest.Create(u);r.UserAgent="F1RU-Launcher/0.23";r.Timeout=30000;r.ReadWriteTimeout=30000;r.AllowAutoRedirect=false;
+  var r=(HttpWebRequest)WebRequest.Create(u);r.UserAgent="F1RU-Launcher/"+TextUpdate.LauncherVersion;r.Timeout=30000;r.ReadWriteTimeout=30000;r.AllowAutoRedirect=false;
   using(var response=(HttpWebResponse)r.GetResponse()){
    Require(response.StatusCode==HttpStatusCode.OK,"GitHub не вернул файл обновления.");Require(response.ContentLength<=maximum,"Размер загрузки превышает предел.");
    using(var s=response.GetResponseStream())using(var output=new MemoryStream()){
@@ -89,13 +103,14 @@ static class Updates {
    // Recheck against current disk state; never trust a stale UI selection.
    var fresh=Check(home,fetch);Require(fresh.Version==update.Version&&fresh.Hash==update.Hash&&fresh.Available,"Сведения об обновлении изменились. Проверьте ещё раз.");
    var m=Read(Path.Combine(home,"manifest.json"));Require(Hash(Payload(home))==Field(m,"lng"),"Локальный перевод изменён вручную. Файл сохранён без изменений.");
+   string contract=InstallContract(m);
    string dir=Path.Combine(home,".updates",Guid.NewGuid().ToString("N"));Directory.CreateDirectory(dir);
    File.WriteAllBytes(Path.Combine(dir,"new.lng"),fetch(fresh.Url,33554432));
    Require(new FileInfo(Path.Combine(dir,"new.lng")).Length==fresh.Bytes&&Hash(Path.Combine(dir,"new.lng"))==fresh.Hash,"Контрольная сумма или размер загрузки не совпадает.");
    ValidateLanguage(Payload(home),Path.Combine(dir,"new.lng"));
    File.Copy(Payload(home),Path.Combine(dir,"old.lng"));File.Copy(Path.Combine(home,"manifest.json"),Path.Combine(dir,"old.json"));
    m["previous_lng"]=Previous(m,Field(m,"lng"));m["lng"]=fresh.Hash;m["text_version"]=fresh.Version;((Dictionary<string,object>)m["payload"])["language.lng"]=fresh.Hash;
-   Write(Path.Combine(dir,"new.json"),m);
+   WriteTextManifest(Path.Combine(dir,"new.json"),m,contract);
    string pending=Path.Combine(home,"update-pending.json");Write(pending,new Dictionary<string,object>{{"transaction",Path.GetFileName(dir)},{"game",game},{"install",install},{"new_hash",fresh.Hash}});
    try{
     Put(Path.Combine(dir,"new.lng"),Payload(home));Put(Path.Combine(dir,"new.json"),Path.Combine(home,"manifest.json"));
@@ -113,7 +128,7 @@ static class Updates {
    string p=Path.Combine(home,"update-pending.json");var journal=Read(p);string id=Field(journal,"transaction");Require(System.Text.RegularExpressions.Regex.IsMatch(id,"^[a-f0-9]{32}$"),"Повреждён журнал обновления.");
    string dir=Path.Combine(home,".updates",id);Require((File.GetAttributes(dir)&FileAttributes.ReparsePoint)==0,"Транзакция является ссылкой.");
    var old=Read(Path.Combine(dir,"old.json"));Require(Hash(Path.Combine(dir,"old.lng"))==Field(old,"lng"),"Копия предыдущего текста повреждена.");
-   old["previous_lng"]=Previous(old,Field(journal,"new_hash"));Write(Path.Combine(dir,"recovery.json"),old);
+   string contract=InstallContract(old);old["previous_lng"]=Previous(old,Field(journal,"new_hash"));WriteTextManifest(Path.Combine(dir,"recovery.json"),old,contract);
    Put(Path.Combine(dir,"old.lng"),Payload(home));Put(Path.Combine(dir,"recovery.json"),Path.Combine(home,"manifest.json"));
    // If an installed game had been updated before a crash, explicitly reinstall
    // the previous text. Factory backups remain untouched by Engine.ps1.
