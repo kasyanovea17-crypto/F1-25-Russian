@@ -167,7 +167,7 @@ try{
    $candidate=Inside ($dir+'\fonts_japanese.erp')
    if((Test-Path -LiteralPath $candidate) -and (Hash $candidate) -eq $p.Value){$found=$candidate;break}
   }
-  if(!$found){throw 'Для переноса старой установки нужен исходный японский шрифт. Восстановите файлы через Steam.'}
+  if(!$found){throw 'Для переноса старой установки нужен исходный японский шрифт. Восстановите файлы через клиент игры (Steam / EA app).'}
   $stockSources[$p.Name]=$found
  }
  $allowedLanguageHashes=@($m.lng)+@($m.previous_lng)

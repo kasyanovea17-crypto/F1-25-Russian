@@ -1,6 +1,6 @@
 ﻿{
   "schema": 24,
-  "version": "0.25",
+  "version": "0.27",
   "previous_lng": [
     "8b39a89c1b88a7b4fead950e5ade103e4f0905ac38d19bb41376575488dd3347",
     "d4c577bdc47540bd32f17c5f63045afd92445d41cad1cd9ddce4150e940db78d",
@@ -398,6 +398,145 @@
         ],
         "publisher_organization": "Electronic Arts, Inc."
       }
+    },
+    {
+      "steam_build": "",
+      "exe_sha256": "cc506879c1c834aa54d3478b2f2133d2ec243f2f2d313397631145ea618ff7f4",
+      "dat_original": "ec7dae53ce54e8a90a76a3526cf4c861b563eeda04db750a306e47dc0cb778ac",
+      "dat_installed": "5f1ac84211ae8e2b17b0eb289fca5d6568f8bfbc24341f8ccdf25d98261a5476",
+      "accepted_dat": [],
+      "backup_dir": ".f1ru-v25-ec7dae53ce54e8a90a76a3526cf4c861b563eeda04db750a306e47dc0cb778ac",
+      "patches": [
+        {
+          "offset": 87778368,
+          "before": "7a4f2af13a58dafc594ea01fffcd9364",
+          "after": "33e8587f9a6a526135df64ac179bf4c3"
+        },
+        {
+          "offset": 89784144,
+          "before": "90e20eca002b7f446d778009ae831c71",
+          "after": "36ee99685d56b2b6c23d81c2098d566b"
+        },
+        {
+          "offset": 89839104,
+          "before": "8b9367b05b4e3763d9c3efb462cb0090",
+          "after": "bd12c8149b9314e4f7b45b227db1546f"
+        },
+        {
+          "offset": 89839120,
+          "before": "50fbd791f14659b43af2917d8bdb080f",
+          "after": "155badc39ab9a5d6a01d3a827baeb5b7"
+        },
+        {
+          "offset": 92587840,
+          "before": "d8c87892e550d38875cd89a7260f4fe5",
+          "after": "8b637c5840040bda5bc1b6abd5307673"
+        },
+        {
+          "offset": 93183680,
+          "before": "ffdb6fde462a8b60e97f9e32f1cf8794",
+          "after": "57ec0416db2708b9344d8636d758beed"
+        },
+        {
+          "offset": 93446160,
+          "before": "c96d248fb0a9a5e3b11f52e469ac8581",
+          "after": "6c855e69f914c228e5955018976e737b"
+        },
+        {
+          "offset": 94042016,
+          "before": "3b7de8f1e17b7b71bc8ccc259dfcd7d5",
+          "after": "9298b5b10549b80e12a491cf0eea142e"
+        },
+        {
+          "offset": 94393408,
+          "before": "fa9c998a94a67a1acf188747a903de72",
+          "after": "8d4ba1240b086e2d78874b88a9927cf2"
+        },
+        {
+          "offset": 96629792,
+          "before": "7d56ff4633abfa8cef831e1ac31f3300",
+          "after": "9243e0f26b5126529e4edadda3fb912b"
+        }
+      ],
+      "protected": {
+        "F1_25.exe": [
+          "cc506879c1c834aa54d3478b2f2133d2ec243f2f2d313397631145ea618ff7f4"
+        ],
+        "EAAntiCheat.GameServiceLauncher.exe": [
+          "bf75213a80d9bcd9d22d0f081ed7ee775cf8e34c6a13407047a75e8c4a319241"
+        ]
+      },
+      "stock_files": {
+        "2025_asset_groups\\ui_package\\fonts_japanese.erp": "a60f5a509f2fdb22ef4e5530652ef5386a065e48f75e6eeab243d32e7dada413",
+        "2025_asset_groups\\ui_package\\fonts_efigs_r_p.erp": "6fcd0415d4c1ca48b83dfd3137487844847457347bb72fed2ec421ca38c897d7"
+      },
+      "install_files": [
+        {
+          "target": "2025_asset_groups\\ui_package\\fonts_russian.erp",
+          "payload": "fonts_russian.erp",
+          "sha256": "31ef1c1a5067bcd88cc54febcbfe48999e151b8e82dcc63903559f1576922a44",
+          "previous_sha256": [
+            "69d6abfa33ffa02ed618f615e2460dbd3d10f8ae59c4cff2262a39fadf28a522"
+          ]
+        },
+        {
+          "target": "2025_asset_groups\\ui_package\\fonts_russian_r_p.erp",
+          "payload": "fonts_russian_r_p.erp",
+          "sha256": "49f786c9f63d75d91d51fc1e5fe108b94456e3b3c1b5e3d0e0ca8a81363baf4c",
+          "previous_sha256": [
+            "270d4ca359958915fa69c942f51b0933cf5c04fc587f2a8df1891ed00ac1fba7"
+          ]
+        },
+        {
+          "target": "localisation\\2025_russian\\language_jap.lng",
+          "payload": "language.lng",
+          "sha256": "45199bc7188adabce90453509bdab95b1fcfa2f41ad5092a859f815f105a50cb"
+        },
+        {
+          "target": "localisation\\2025_russian\\language_eng.lng",
+          "payload": "language.lng",
+          "sha256": "45199bc7188adabce90453509bdab95b1fcfa2f41ad5092a859f815f105a50cb"
+        }
+      ],
+      "micro_compatibility": {
+        "schema": 1,
+        "exe_header_bytes": 419200,
+        "exe_header_sha256": "e05065d471982369a7ee3ea09726f1eaf3b0ae406f6aa81c74e4ebc9df3ac1fc",
+        "dat_bytes": 170177536,
+        "critical_ranges": [
+          {
+            "entry": 3453,
+            "path": "system/config.xml",
+            "offset": 87684608,
+            "length": 83712,
+            "sha256": "b3d34dc8c6c603d539c2c403b2e9ee13d3fe3cfe3cae1ece06aeb5f9b6b3c458"
+          },
+          {
+            "entry": 3457,
+            "path": "system/config_sku.xml",
+            "offset": 87778176,
+            "length": 3072,
+            "sha256": "ac93ea4f2e9044b717efb3b6eed2fb2a90d9b55d0af498bdab15755e3bc23e79"
+          },
+          {
+            "entry": 3486,
+            "path": "system/ui_render_config.xml",
+            "offset": 89313280,
+            "length": 8704,
+            "sha256": "df638e008cedc426bef6f931c131a676f157b1dbfb46cb8f3b13697267d670eb"
+          },
+          {
+            "entry": 3494,
+            "path": "f1_2025.manifest",
+            "offset": 89451392,
+            "length": 8128896,
+            "sha256": "826652712c6d3a3da231046c6cdbf9a6fedcda0c7e66ea7a806763fb8051989a"
+          }
+        ],
+        "publisher_organization": "Electronic Arts, Inc."
+      },
+      "platform": "ea",
+      "build_label": "EA app 1.0.141.7865"
     }
   ],
   "audio_mode": {
@@ -407,8 +546,12 @@
     ],
     "preferred": "english",
     "voice_files_modified": false,
-    "method": "Native Steam language, unchanged speech banks; Russian LNG and separate font packs",
-    "runtime_verified": false
+    "method": "Native client language, unchanged speech banks; Russian LNG and separate font packs",
+    "runtime_verified": false,
+    "supported_clients": [
+      "Steam",
+      "EA app"
+    ]
   },
   "font_style": "Uniform Arial/Arial Bold text"
 }

@@ -12,7 +12,7 @@ using System.Web.Script.Serialization;
 sealed class TextUpdate {
  public const string Repository="https://github.com/kasyanovea17-crypto/F1-25-Russian";
  public const string Channel="https://raw.githubusercontent.com/kasyanovea17-crypto/F1-25-Russian/main/updates/";
- public const string LauncherVersion="0.25";
+ public const string LauncherVersion="0.27";
  public string Version,Hash,Notes,Url; public int Bytes; public bool Available;
 }
 static class Updates {
