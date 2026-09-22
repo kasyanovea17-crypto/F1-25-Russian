@@ -4,11 +4,10 @@ $out=Join-Path $r 'dist\F1_25_RU_v0.27'
 $zip=Join-Path $r 'dist\F1_25_RU_v0.27_text0.15.5.zip'
 if((Test-Path -LiteralPath $out) -or (Test-Path -LiteralPath $zip)){throw 'Output exists. Preserve or rename it before rebuilding.'}
 [IO.Directory]::CreateDirectory($out)|Out-Null
-foreach($n in @('Launcher.cs','Updater.cs','Addons.cs','Engine.ps1','Compatibility.cs','background.png','project-links.json','EDITORIAL_NOTES.json','README.txt','CHANGELOG.md','Вернуть оригинал.cmd','ROLLBACK.sh','TEST_REPORT.md')){
+foreach($n in @('Launcher.cs','Updater.cs','Engine.ps1','Compatibility.cs','background.png','project-links.json','EDITORIAL_NOTES.json','README.txt','CHANGELOG.md','Вернуть оригинал.cmd','ROLLBACK.sh','TEST_REPORT.md')){
  Copy-Item -LiteralPath (Join-Path $r $n) -Destination (Join-Path $out $n)
 }
 Copy-Item -LiteralPath (Join-Path $r 'assets') -Destination $out -Recurse
-Copy-Item -LiteralPath (Join-Path $r 'addons') -Destination $out -Recurse
 [IO.Directory]::CreateDirectory((Join-Path $out 'evidence'))|Out-Null
 [IO.Directory]::CreateDirectory((Join-Path $out 'payload'))|Out-Null
 $channel=Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $r 'updates\stable.json')|ConvertFrom-Json
@@ -27,7 +26,7 @@ foreach($p in $m.payload.PSObject.Properties){
 }
 $csc=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 Push-Location $out
-try{& $csc /nologo /target:winexe /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll /out:Launcher.exe Launcher.cs Updater.cs Addons.cs;if($LASTEXITCODE -ne 0){throw 'Build failed'}}finally{Pop-Location}
+try{& $csc /nologo /target:winexe /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll /out:Launcher.exe Launcher.cs Updater.cs;if($LASTEXITCODE -ne 0){throw 'Build failed'}}finally{Pop-Location}
 $result=Join-Path $out 'VERIFICATION.txt'
 $p=Start-Process -FilePath (Join-Path $out 'Launcher.exe') -ArgumentList ('--self-test "'+$result+'"') -WindowStyle Hidden -Wait -PassThru
 if($p.ExitCode -ne 0){throw 'UI test failed'}

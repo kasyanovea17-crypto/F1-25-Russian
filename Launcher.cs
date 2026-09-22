@@ -72,9 +72,9 @@ sealed partial class Launcher : Form {
   path=new TextBox{Bounds=new Rectangle(12,12,332,22),BorderStyle=BorderStyle.None,Font=new Font("Segoe UI",9),BackColor=location.BackColor,Text=@"C:\Program Files (x86)\Steam\steamapps\common\F1 25",AccessibleName="Папка игры F1 25"};location.Controls.Add(path);
   path.TextChanged+=(s,e)=>{prepared=false;RefreshControls();RefreshVoice();SetStatus("Путь изменён","Проверьте выбранную папку перед установкой.",muted);};
   browse=ButtonAt(location,"",351,5,39,30,false,0xf3d8);browse.AccessibleName="Выбрать папку игры";contactTips.SetToolTip(browse,"Выбрать папку F1 25");browse.Click+=(s,e)=>{using(var d=new FolderBrowserDialog()){d.Description="Папка F1 25";if(Directory.Exists(path.Text))d.SelectedPath=path.Text;if(d.ShowDialog(this)==DialogResult.OK)path.Text=d.SelectedPath;}};
-  Nav("install","Установка",0xf423,182);Nav("voice","Озвучка",-1,230);Nav("updates","Обновления",0xf130,278);Nav("restore","Вернуть оригинал",0xf117,326);Nav("addons","Дополнения",0xf194,374);
-  LabelAt(this,"ПОМОЩЬ",38,426,171,20,8,FontStyle.Bold,Color.FromArgb(156,163,165));
-  Nav("help","Инструкция",0xf194,451);Nav("log","Журнал",0xf444,497);Nav("about","О проекте",0xf431,543);
+  Nav("install","Установка",0xf423,182);Nav("voice","Озвучка",-1,230);Nav("updates","Обновления",0xf130,278);Nav("restore","Вернуть оригинал",0xf117,326);
+  LabelAt(this,"ПОМОЩЬ",38,382,171,20,8,FontStyle.Bold,Color.FromArgb(156,163,165));
+  Nav("help","Инструкция",0xf194,407);Nav("log","Журнал",0xf444,453);Nav("about","О проекте",0xf431,499);
   LabelAt(this,"СОЗДАНО KARSVEIN\nТекст и субтитры • RU",39,599,170,48,8,FontStyle.Regular,Color.FromArgb(179,185,187));
   LabelAt(this,"Связаться с автором",650,42,195,23,10,FontStyle.Bold,Color.Black);
   minimize=ButtonAt(this,"",873,29,28,28,false,0xf2ea);minimize.AccessibleName="Свернуть";minimize.Click+=(s,e)=>WindowState=FormWindowState.Minimized;
@@ -92,7 +92,7 @@ sealed partial class Launcher : Form {
   packageVersion=LabelAt(this,"",653,590,272,22,9,FontStyle.Regular,muted);
   LabelAt(this,"Лаунчер 0.27",653,612,266,22,9,FontStyle.Bold,Color.Black);
   LabelAt(this,"Разработано Karsvein",653,635,266,22,9,FontStyle.Regular,muted);
-  BuildInstall();BuildVoice();BuildUpdates();BuildRestore();BuildHelp();BuildLog();BuildAbout();BuildAddons();ShowPage("install");RefreshVersions();RefreshControls();
+  BuildInstall();BuildVoice();BuildUpdates();BuildRestore();BuildHelp();BuildLog();BuildAbout();ShowPage("install");RefreshVersions();RefreshControls();
   Activated+=(s,e)=>{if(!busy)RefreshVoice();};
   path.TabIndex=0;browse.TabIndex=1;ready.TabIndex=2;prepare.TabIndex=3;install.TabIndex=4;
   Shown+=(s,e)=>{path.SelectionStart=path.Text.Length;path.SelectionLength=0;nav["install"].Focus();};contactTips.SetToolTip(path,path.Text);
@@ -190,7 +190,7 @@ sealed partial class Launcher : Form {
  Label LabelAt(Control parent,string text,int x,int y,int w,int h,float size,FontStyle style,Color color){var l=new Label{Text=text,Bounds=new Rectangle(x,y,w,h),Font=new Font(size>=19?"Bahnschrift":"Segoe UI",size,style),ForeColor=color,BackColor=Color.Transparent,UseMnemonic=false};parent.Controls.Add(l);return l;}
  Button ButtonAt(Control parent,string text,int x,int y,int w,int h,bool primary,int glyph=0){var b=new UiButton{Primary=primary,Glyph=glyph,Text=text,Bounds=new Rectangle(x,y,w,h),Font=new Font("Segoe UI",9.5f,FontStyle.Bold),AccessibleName=text};parent.Controls.Add(b);return b;}
  void RefreshVersions(){if(packageVersion!=null)packageVersion.Text="Версия перевода: "+Updates.LocalVersion(home);}
- void RefreshControls(){RefreshAddons();if(prepare==null||install==null)return;bool pending=File.Exists(Path.Combine(home,"update-pending.json"));prepare.Enabled=!busy&&!pending;install.Enabled=!busy&&!pending&&prepared&&ready.Checked;restore.Enabled=!busy&&!pending;browse.Enabled=!busy;path.Enabled=!busy;ready.Enabled=!busy;help.Enabled=!busy;details.Enabled=!busy;checkUpdate.Enabled=!busy;applyUpdate.Enabled=!busy&&candidate!=null&&candidate.Available;recoverUpdate.Enabled=!busy&&File.Exists(Path.Combine(home,"update-pending.json"));installUpdate.Enabled=!busy;voice.Enabled=!busy;voiceSteam.Enabled=!busy;voiceRefresh.Enabled=!busy;progress.Visible=busy;closeButton.Enabled=!busy;AcceptButton=currentPage=="install"?(install.Enabled?install:prepare):currentPage=="updates"?checkUpdate:null;}
+ void RefreshControls(){if(prepare==null||install==null)return;bool pending=File.Exists(Path.Combine(home,"update-pending.json"));prepare.Enabled=!busy&&!pending;install.Enabled=!busy&&!pending&&prepared&&ready.Checked;restore.Enabled=!busy&&!pending;browse.Enabled=!busy;path.Enabled=!busy;ready.Enabled=!busy;help.Enabled=!busy;details.Enabled=!busy;checkUpdate.Enabled=!busy;applyUpdate.Enabled=!busy&&candidate!=null&&candidate.Available;recoverUpdate.Enabled=!busy&&File.Exists(Path.Combine(home,"update-pending.json"));installUpdate.Enabled=!busy;voice.Enabled=!busy;voiceSteam.Enabled=!busy;voiceRefresh.Enabled=!busy;progress.Visible=busy;closeButton.Enabled=!busy;AcceptButton=currentPage=="install"?(install.Enabled?install:prepare):currentPage=="updates"?checkUpdate:null;}
  void SetStatus(string title,string text,Color color){if(statusTitle==null)return;statusTitle.Text=title;statusText.Text=text.Length>120?text.Substring(0,117)+"…":text;phase.BackColor=color;}
  void ShowLog(){ShowPage("log");}
  void StartJob(string title,Func<string> job,Action done){if(busy)return;busy=true;SetStatus(title,"Дождитесь завершения операции.",accent);RefreshControls();ThreadPool.QueueUserWorkItem(delegate{string result;bool ok=true;try{result=job();}catch(Exception ex){ok=false;result=ex.Message;}if(!IsDisposed)BeginInvoke((Action)delegate{busy=false;lastLog=result;logBox.Text=result;SetStatus(ok?"Готово":"Операция не завершена",result,ok?green:Color.FromArgb(171,63,28));RefreshVersions();if(currentPage=="updates")updateMessage.Text=result;if(ok&&done!=null)done();RefreshControls();});});}
@@ -242,8 +242,7 @@ sealed partial class Launcher : Form {
   Check(ContainsText(this,"Японский также поддерживается, но не обязателен.")&&!ContainsText(this,"Японский нужен для шрифта"),"optional Japanese base");
   Check(ContainsText(this,"Шрифт устанавливается отдельным пакетом.")&&ContainsText(this,"Будет восстановлен исходный game.dat."),"native package information");
   Check(ClientSize==new Size(960,680),"window size");foreach(Control c in Controls)Check(c.Left>=5&&c.Top>=5&&c.Right<=Width-5&&c.Bottom<=Height-5,"inside frame: "+c.Text);
-  foreach(string page in new[]{"install","voice","updates","restore","addons","help","log","about"}){ShowPage(page);Check(nav[page].Selected&&currentPage==page,"navigation "+page);}ShowPage("install");
-  Check(ContainsText(this,"Дополнения")&&ContainsText(this,"Установить русский модуль"),"addon page");
+  foreach(string page in new[]{"install","voice","updates","restore","help","log","about"}){ShowPage(page);Check(nav[page].Selected&&currentPage==page,"navigation "+page);}ShowPage("install");
   Check(voice.Items.Count==2&&SelectedVoice=="english","English default and Japanese option");
   Check(ParseSteamVoice("\"UserConfig\" { \"language\" \"english\" } \"MountedConfig\" { \"language\" \"japanese\" }")=="english","selected language beats mounted language");
   Check(ParseSteamVoice("\"MountedConfig\" { \"language\" \"japanese\" }")=="","no guessing from mounted language");
