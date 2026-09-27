@@ -1,4 +1,4 @@
-﻿param([ValidateSet('prepare','install','restore')][string]$Action='prepare',[Parameter(Mandatory=$true)][string]$GamePath,[switch]$TestMode)
+﻿param([ValidateSet('prepare','install','restore')][string]$Action='prepare',[Parameter(Mandatory=$true)][string]$GamePath,[switch]$TestMode,[ValidateSet('russian','original_names')][string]$Translation='russian')
 $ErrorActionPreference='Stop'
 [Console]::OutputEncoding=New-Object Text.UTF8Encoding($false)
 function Hash([string]$p){$a=[Security.Cryptography.SHA256]::Create();$s=[IO.File]::OpenRead($p);try{return ([BitConverter]::ToString($a.ComputeHash($s))).Replace('-','').ToLowerInvariant()}finally{$s.Dispose();$a.Dispose()}}
@@ -71,10 +71,10 @@ function ValidateJournal($j){
    if($e.before -notin $known -or $e.after -ne $stock){throw 'Состояние исходного шрифта в журнале неизвестно.'}
   }elseif($e.target -ne ($profile.backup_dir+'\state.json')){
    $f=@($profile.install_files|Where-Object {$_.target -ceq $e.target})[0]
-   $known=@($f.sha256)+@($f.previous_sha256);if($f.payload -eq 'language.lng'){$known=@($m.lng)+@($m.previous_lng)}
+   $known=@($f.sha256)+@($f.previous_sha256);if($f.payload -eq 'language.lng'){$known=$allowedLanguageHashes}
    foreach($hash in $known){if($null -ne $hash -and $hash -notmatch '^[0-9a-f]{64}$'){throw 'Некорректная история контрольных сумм.'}}
    if($e.existed -and $e.before -notin $known){throw 'Предыдущее состояние ресурса в журнале неизвестно.'}
-   if($j.action -eq 'install'){$want=@($f.sha256);if($f.payload -eq 'language.lng'){$want=@($m.lng)+@($m.previous_lng)};if($e.after -notin $want){throw 'Новое состояние ресурса в журнале неизвестно.'}}elseif($null -ne $e.after -and $e.after -ne ''){throw 'Удаляемый ресурс имеет неверное состояние.'}
+   if($j.action -eq 'install'){$want=@($f.sha256);if($f.payload -eq 'language.lng'){$want=$allowedLanguageHashes};if($e.after -notin $want){throw 'Новое состояние ресурса в журнале неизвестно.'}}elseif($null -ne $e.after -and $e.after -ne ''){throw 'Удаляемый ресурс имеет неверное состояние.'}
   }
  }
 }
@@ -130,6 +130,20 @@ try{
  if($TestMode -and !$root.StartsWith(([IO.Path]::GetFullPath($PSScriptRoot)+'\test-game'),[StringComparison]::OrdinalIgnoreCase)){throw 'Тестовый режим разрешён только для изолированной тестовой папки лаунчера.'}
  if((Get-Item -LiteralPath $root -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Выберите реальную папку игры, не ссылку.'}
  $m=Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'manifest.json')|ConvertFrom-Json
+ # Both known variants are accepted during migration and journal recovery.
+ $languageHash=$m.lng;$languagePayload='language.lng'
+ $allowedLanguageHashes=@($m.lng)+@($m.previous_lng)
+ if($m.translation_variants){foreach($variant in $m.translation_variants.PSObject.Properties){
+  if($variant.Name -notin @('russian','original_names')){throw 'Неизвестный вариант перевода.'}
+  if($variant.Value.sha256 -notmatch '^[0-9a-f]{64}$'){throw 'Повреждена сумма варианта перевода.'}
+  $allowedLanguageHashes+=@($variant.Value.sha256)+@($variant.Value.previous_sha256)
+ }}
+ if($Translation -eq 'original_names'){
+  $variant=$m.translation_variants.original_names
+  if(!$variant -or $variant.payload -cne 'language-original-names.lng' -or $variant.sha256 -notmatch '^[0-9a-f]{64}$' -or $variant.records -ne 56134){throw 'В архиве отсутствует вариант с оригинальными именами.'}
+  $languageHash=$variant.sha256;$languagePayload=$variant.payload
+  if($m.payload.($languagePayload) -cne $languageHash){throw 'Описание варианта перевода не совпадает с комплектом.'}
+ }
  $exeHash=Hash (Inside 'F1_25.exe')
  $profiles=@($m.native_profiles|Where-Object {$_.exe_sha256 -eq $exeHash})
  if($profiles.Count -eq 0){
@@ -170,7 +184,6 @@ try{
   if(!$found){throw 'Для переноса старой установки нужен исходный японский шрифт. Восстановите файлы через клиент игры (Steam / EA app).'}
   $stockSources[$p.Name]=$found
  }
- $allowedLanguageHashes=@($m.lng)+@($m.previous_lng)
  foreach($file in $profile.install_files){
   $p=Inside $file.target
   $allowed=@($file.sha256)+@($file.previous_sha256);if($file.payload -eq 'language.lng'){$allowed=$allowedLanguageHashes}
@@ -178,7 +191,7 @@ try{
   if(Test-Path -LiteralPath $p){$h=Hash $p;if($h -notin $allowed){throw ('Файл изменён другим инструментом: '+$file.target)}}
  }
  if($Action -ne 'restore'){foreach($p in $m.payload.PSObject.Properties){if((Hash (Payload $p.Name)) -ne $p.Value){throw ('Комплект повреждён: '+$p.Name)}}}
- if($Action -eq 'prepare'){Write-Output 'PREPARE PASS; комплект и сборка совместимы. Отдельные русские шрифты; исходные шрифты, EXE и античит сохраняются.';exit 0}
+ if($Action -eq 'prepare'){Write-Output ('TRANSLATION '+$Translation+'; SHA256 '+$languageHash);Write-Output 'PREPARE PASS; комплект и сборка совместимы. Отдельные русские шрифты; исходные шрифты, EXE и античит сохраняются.';exit 0}
  $txnName='.f1ru-transaction-'+[guid]::NewGuid().ToString('N');$txn=Inside $txnName;[IO.Directory]::CreateDirectory($txn)|Out-Null
  # Recover exact stock only from known complete input hashes and locally packaged patch bytes.
  if(!(Test-Path -LiteralPath $original)){
@@ -196,7 +209,7 @@ try{
  if((Hash $dat) -ne $dh){throw 'Игра обновилась во время подготовки. Повторите проверку.'}
  foreach($name in $stockHashes.Keys){if((Hash (Inside $name)) -ne $stockHashes[$name]){throw 'Исходные ресурсы изменились во время подготовки.'}}
  $nextState=Join-Path $txn 'state-next.json'
- SaveJson $nextState @{schema=24;root=$root;status=$Action;version=$m.version;steam_build=$profile.steam_build;online_verified=$false;audio_files_changed=$false}
+ SaveJson $nextState @{schema=24;root=$root;status=$Action;version=$m.version;steam_build=$profile.steam_build;online_verified=$false;audio_files_changed=$false;translation_variant=$Translation;language_sha256=$languageHash}
  $entries=@();$committed=$false
  foreach($name in @(TargetNames)){
   $p=Inside $name;$before=CurrentHash $p;$exists=$null -ne $before;$saved=Join-Path $txn ('snapshot-'+$entries.Count)
@@ -205,7 +218,7 @@ try{
   if($name -eq 'game.dat'){$after=$profile.dat_original;if($Action -eq 'install'){$after=$profile.dat_installed}}
   elseif($profile.stock_files.PSObject.Properties.Name -contains $name){$after=$profile.stock_files.$name}
   elseif($name -eq ($profile.backup_dir+'\state.json')){$after=Hash $nextState}
-  elseif($Action -eq 'install'){$f=@($profile.install_files|Where-Object {$_.target -ceq $name})[0];$after=$f.sha256;if($f.payload -eq 'language.lng'){$after=$m.lng}}
+  elseif($Action -eq 'install'){$f=@($profile.install_files|Where-Object {$_.target -ceq $name})[0];$after=$f.sha256;if($f.payload -eq 'language.lng'){$after=$languageHash}}
   $entries+=@{target=$name;snapshot=('snapshot-'+$entries.Count);existed=$exists;before=$before;after=$after}
  }
  $journal=@{schema=1;root=$root;backup_dir=$profile.backup_dir;transaction=$txnName;action=$Action;entries=$entries}
@@ -216,7 +229,7 @@ try{
  try{
   if($Action -eq 'install'){
    Put $patched $dat
-   foreach($file in $profile.install_files){Put (Payload $file.payload) (Inside $file.target)}
+   foreach($file in $profile.install_files){$source=$file.payload;if($source -eq 'language.lng'){$source=$languagePayload};Put (Payload $source) (Inside $file.target)}
   }else{
    Put $original $dat
    foreach($file in $profile.install_files){$p=Inside $file.target;if(Test-Path -LiteralPath $p){[IO.File]::Delete($p)}}
@@ -224,7 +237,7 @@ try{
   foreach($name in $stockSources.Keys){$dst=Inside $name;if((Hash $dst) -ne $profile.stock_files.$name){Put (Inside ($profile.backup_dir+'\'+[IO.Path]::GetFileName($name))) $dst};if((Hash $dst) -ne $profile.stock_files.$name){throw 'Исходный шрифт не прошёл проверку.'}}
   $expected=$profile.dat_original;if($Action -eq 'install'){$expected=$profile.dat_installed}
   if((Hash $dat) -ne $expected){throw 'Архив после записи не прошёл проверку.'}
-  foreach($file in $profile.install_files){$p=Inside $file.target;$fileHash=$file.sha256;if($file.payload -eq 'language.lng'){$fileHash=$m.lng};if($Action -eq 'install'){if((Hash $p) -ne $fileHash){throw 'Ресурс после записи не прошёл проверку.'}}elseif(Test-Path -LiteralPath $p){throw 'Добавленный ресурс остался после восстановления.'}}
+  foreach($file in $profile.install_files){$p=Inside $file.target;$fileHash=$file.sha256;if($file.payload -eq 'language.lng'){$fileHash=$languageHash};if($Action -eq 'install'){if((Hash $p) -ne $fileHash){throw 'Ресурс после записи не прошёл проверку.'}}elseif(Test-Path -LiteralPath $p){throw 'Добавленный ресурс остался после восстановления.'}}
   foreach($name in $protected.Keys){if((Hash (Inside $name)) -ne $protected[$name]){throw 'Состояние исполняемых файлов изменилось во время операции.'}}
   Put $nextState $statePath
   foreach($e in $checked.entries){if((CurrentHash (Inside $e.target)) -ne $e.after){throw 'Финальное состояние операции не прошло проверку.'}}
@@ -232,7 +245,7 @@ try{
  }finally{
   if(!$committed){RecoverPending}
  }
- if($Action -eq 'install'){Write-Output 'INSTALL PASS; русский текст и отдельные шрифты установлены; исходные шрифты, озвучка, EXE и античит не изменены.'}else{Write-Output 'RESTORE PASS; исходный game.dat и шрифты восстановлены; добавленные шрифты и два файла русского текста удалены; озвучка, EXE и античит не изменены.'}
+ if($Action -eq 'install'){Write-Output ('TRANSLATION '+$Translation+'; SHA256 '+$languageHash);Write-Output 'INSTALL PASS; русский текст и отдельные шрифты установлены; исходные шрифты, озвучка, EXE и античит не изменены.'}else{Write-Output 'RESTORE PASS; исходный game.dat и шрифты восстановлены; добавленные шрифты и два файла русского текста удалены; озвучка, EXE и античит не изменены.'}
  exit 0
 }catch{Write-Output ('ОШИБКА: '+$_.Exception.Message);exit 1}
 finally{

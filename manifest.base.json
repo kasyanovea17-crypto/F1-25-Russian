@@ -1,6 +1,6 @@
-﻿{
+{
   "schema": 24,
-  "version": "0.27",
+  "version": "0.28",
   "previous_lng": [
     "8b39a89c1b88a7b4fead950e5ade103e4f0905ac38d19bb41376575488dd3347",
     "d4c577bdc47540bd32f17c5f63045afd92445d41cad1cd9ddce4150e940db78d",
@@ -28,7 +28,8 @@
   "payload": {
     "fonts_russian.erp": "31ef1c1a5067bcd88cc54febcbfe48999e151b8e82dcc63903559f1576922a44",
     "fonts_russian_r_p.erp": "49f786c9f63d75d91d51fc1e5fe108b94456e3b3c1b5e3d0e0ca8a81363baf4c",
-    "language.lng": "45199bc7188adabce90453509bdab95b1fcfa2f41ad5092a859f815f105a50cb"
+    "language.lng": "45199bc7188adabce90453509bdab95b1fcfa2f41ad5092a859f815f105a50cb",
+    "language-original-names.lng": "a7164c1f4c2cca30e0c2e701148e0f645e0adf72f8213ffe4fb5dba0854adf82"
   },
   "semantic_import": {
     "rows_one_based": [
@@ -553,5 +554,16 @@
       "EA app"
     ]
   },
-  "font_style": "Uniform Arial/Arial Bold text"
+  "font_style": "Uniform Arial/Arial Bold text",
+  "translation_variants": {
+    "original_names": {
+      "payload": "language-original-names.lng",
+      "sha256": "a7164c1f4c2cca30e0c2e701148e0f645e0adf72f8213ffe4fb5dba0854adf82",
+      "version": "0.15.5.1",
+      "base_text_version": "0.15.5",
+      "records": 56134,
+      "changed": 12301,
+      "previous_sha256": []
+    }
+  }
 }
