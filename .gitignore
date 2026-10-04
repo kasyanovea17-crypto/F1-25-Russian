@@ -7,3 +7,6 @@ __pycache__/
 .f1ru*/
 .env
 *.log
+
+evidence/
+

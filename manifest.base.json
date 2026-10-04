@@ -1,6 +1,6 @@
 {
   "schema": 24,
-  "version": "0.28",
+  "version": "0.29",
   "previous_lng": [
     "8b39a89c1b88a7b4fead950e5ade103e4f0905ac38d19bb41376575488dd3347",
     "d4c577bdc47540bd32f17c5f63045afd92445d41cad1cd9ddce4150e940db78d",
@@ -29,7 +29,11 @@
     "fonts_russian.erp": "31ef1c1a5067bcd88cc54febcbfe48999e151b8e82dcc63903559f1576922a44",
     "fonts_russian_r_p.erp": "49f786c9f63d75d91d51fc1e5fe108b94456e3b3c1b5e3d0e0ca8a81363baf4c",
     "language.lng": "45199bc7188adabce90453509bdab95b1fcfa2f41ad5092a859f815f105a50cb",
-    "language-original-names.lng": "a7164c1f4c2cca30e0c2e701148e0f645e0adf72f8213ffe4fb5dba0854adf82"
+    "language-original-names.lng": "a7164c1f4c2cca30e0c2e701148e0f645e0adf72f8213ffe4fb5dba0854adf82",
+    "language-1.18.lng": "10ec45fec208c219b518f3220240feb95761a1f17ca7b8a3decfd37649df5094",
+    "language-1.18-original-names.lng": "26416cff3c5be7dc54107a46ca5a8a2d0c2859e5906f56f89fa80df3779e3d4d",
+    "language-1.24.lng": "4ddea512f25907af268b1cc5ed8d307beb9dc2781da6751219333772bf15e2d1",
+    "language-1.24-original-names.lng": "3b0f0434178298fa36b320f7459b56c440de163b87800380bf2fa76e70dd1b25"
   },
   "semantic_import": {
     "rows_one_based": [
@@ -398,7 +402,8 @@
           }
         ],
         "publisher_organization": "Electronic Arts, Inc."
-      }
+      },
+      "game_version": "1.26"
     },
     {
       "steam_build": "",
@@ -537,7 +542,206 @@
         "publisher_organization": "Electronic Arts, Inc."
       },
       "platform": "ea",
-      "build_label": "EA app 1.0.141.7865"
+      "build_label": "EA app 1.0.141.7865",
+      "game_version": "1.26"
+    },
+    {
+      "steam_build": "",
+      "exe_sha256": "d67db1a98fb51153224901a561e0ce523ddbf9077a39a128e0f45fffc14e00f2",
+      "dat_original": "6844ceed995ca615c3b06ea44bcdf32213c889906a90a6f207ddd27546fd3b1a",
+      "dat_installed": "df893c7a21bb5102a458fca6880149e39f1bd492e4d31bbe5fd1e2314bfbf452",
+      "accepted_dat": [],
+      "backup_dir": ".f1ru-v25-6844ceed995ca615c3b06ea44bcdf32213c889906a90a6f207ddd27546fd3b1a",
+      "patches": [
+        {
+          "offset": 86899008,
+          "before": "040cddf1e2bb89bdfc330474e0240e0e",
+          "after": "79029d87c104d8c70c7463227f9f61e2"
+        },
+        {
+          "offset": 86899024,
+          "before": "bc830972a063932b4a7f6d1a951f12e5",
+          "after": "c94e1bff34dfb6340a9f2a069bfd36cf"
+        },
+        {
+          "offset": 89155632,
+          "before": "90e20eca002b7f446d778009ae831c71",
+          "after": "36ee99685d56b2b6c23d81c2098d566b"
+        },
+        {
+          "offset": 89795264,
+          "before": "f5ac20c298ae4e3180ab0f151e99be0d",
+          "after": "3fa547fbab7c6bb61977f421efe6b32b"
+        },
+        {
+          "offset": 94222832,
+          "before": "26d17675dd6599cede54d670faf4af82",
+          "after": "aa6521fdac48da7ef74394be087a216c"
+        },
+        {
+          "offset": 95139840,
+          "before": "b94109045123cb1ed65db8930bda185d",
+          "after": "6b572256af53bc639d1544e81fac0816"
+        },
+        {
+          "offset": 95543408,
+          "before": "705dc98c4d319973382d44c998879211",
+          "after": "cc587757152ef19e55d8ddb743df6d0d"
+        },
+        {
+          "offset": 96460416,
+          "before": "d22d7fdd78d1d0c0038c928d97da64a0",
+          "after": "cbed0534e55ddb452e62457026d5cf02"
+        },
+        {
+          "offset": 96988608,
+          "before": "b0b2c094df496456bafdb3d7d1c659e9",
+          "after": "17f06f4248ad9416a6cfe5f9cd255a1d"
+        },
+        {
+          "offset": 100445872,
+          "before": "07b4746dc0c643906008f28d1c12cffd",
+          "after": "9c8362d6473c7b24fb02083df92f70d5"
+        }
+      ],
+      "protected": {
+        "F1_25.exe": [
+          "d67db1a98fb51153224901a561e0ce523ddbf9077a39a128e0f45fffc14e00f2"
+        ]
+      },
+      "stock_files": {
+        "2025_asset_groups\\ui_package\\fonts_japanese.erp": "a60f5a509f2fdb22ef4e5530652ef5386a065e48f75e6eeab243d32e7dada413",
+        "2025_asset_groups\\ui_package\\fonts_efigs_r_p.erp": "6fcd0415d4c1ca48b83dfd3137487844847457347bb72fed2ec421ca38c897d7"
+      },
+      "install_files": [
+        {
+          "target": "2025_asset_groups\\ui_package\\fonts_russian.erp",
+          "payload": "fonts_russian.erp",
+          "sha256": "31ef1c1a5067bcd88cc54febcbfe48999e151b8e82dcc63903559f1576922a44",
+          "previous_sha256": []
+        },
+        {
+          "target": "2025_asset_groups\\ui_package\\fonts_russian_r_p.erp",
+          "payload": "fonts_russian_r_p.erp",
+          "sha256": "49f786c9f63d75d91d51fc1e5fe108b94456e3b3c1b5e3d0e0ca8a81363baf4c",
+          "previous_sha256": []
+        },
+        {
+          "target": "localisation\\2025_russian\\language_jap.lng",
+          "payload": "language.lng",
+          "sha256": "10ec45fec208c219b518f3220240feb95761a1f17ca7b8a3decfd37649df5094",
+          "previous_sha256": []
+        },
+        {
+          "target": "localisation\\2025_russian\\language_eng.lng",
+          "payload": "language.lng",
+          "sha256": "10ec45fec208c219b518f3220240feb95761a1f17ca7b8a3decfd37649df5094",
+          "previous_sha256": []
+        }
+      ],
+      "platform": "legacy",
+      "build_label": "F1 25 1.18.0 exact resource pair",
+      "language_set": "1.18",
+      "game_version": "1.18"
+    },
+    {
+      "steam_build": "",
+      "exe_sha256": "610fe1a87f859f03b687be2cbfc5863d79a1fc47a1367c8c4d45310b455554f4",
+      "dat_original": "4cc8e886987a0d1b1d47d3b29c329e17f4548a0ed9002fcb633da63f9b0bf0c4",
+      "dat_installed": "db019971698caa05adbc8c8254d3f19067177fbcee8ff72caeca977e151fb33d",
+      "accepted_dat": [],
+      "backup_dir": ".f1ru-v25-4cc8e886987a0d1b1d47d3b29c329e17f4548a0ed9002fcb633da63f9b0bf0c4",
+      "patches": [
+        {
+          "offset": 87580992,
+          "before": "7a4f2af13a58dafc594ea01fffcd9364",
+          "after": "33e8587f9a6a526135df64ac179bf4c3"
+        },
+        {
+          "offset": 89602432,
+          "before": "91f82d807c07f6fcc6595968c6c588c1",
+          "after": "cf6f2c4510136d5ab3669d6b5f49b884"
+        },
+        {
+          "offset": 89602448,
+          "before": "86bcf8a26c6ec6cc9f1ef8947d22ce37",
+          "after": "8def02eb1a96e5c539825cf9a2c3a64d"
+        },
+        {
+          "offset": 89748288,
+          "before": "c959a384f93724e3900c537fae11cad1",
+          "after": "b51c25470e11b9ee73526792309986a6"
+        },
+        {
+          "offset": 92462768,
+          "before": "0e6b9d1ac7026137144a87b8c0f27e49",
+          "after": "9771cbbc029611e38ced0979141bd6d0"
+        },
+        {
+          "offset": 92759632,
+          "before": "23d75ff3861f9b4e882b7c46052d661d",
+          "after": "ff8ed7317270b0aad2d2fe166e751752"
+        },
+        {
+          "offset": 93302416,
+          "before": "09ff0141ccd537e83148ac38605761c0",
+          "after": "a44dcd7d61be99fb39cb72d7685f135d"
+        },
+        {
+          "offset": 93599296,
+          "before": "09432bf902d360a8b721b286ddc061e4",
+          "after": "af0ae3104804e5e6d9f5daf849c847cf"
+        },
+        {
+          "offset": 94569536,
+          "before": "3f722bf74a89c23ec5251e22088acef5",
+          "after": "4b298bbf38f151bff71d7d5a5da06bcb"
+        },
+        {
+          "offset": 95683152,
+          "before": "24e0b6525370ae75d6ea0947c1098c8e",
+          "after": "49fbb0c2b1d14270663fab1a0f26dedf"
+        }
+      ],
+      "protected": {
+        "F1_25.exe": [
+          "610fe1a87f859f03b687be2cbfc5863d79a1fc47a1367c8c4d45310b455554f4"
+        ]
+      },
+      "stock_files": {
+        "2025_asset_groups\\ui_package\\fonts_japanese.erp": "a60f5a509f2fdb22ef4e5530652ef5386a065e48f75e6eeab243d32e7dada413",
+        "2025_asset_groups\\ui_package\\fonts_efigs_r_p.erp": "6fcd0415d4c1ca48b83dfd3137487844847457347bb72fed2ec421ca38c897d7"
+      },
+      "install_files": [
+        {
+          "target": "2025_asset_groups\\ui_package\\fonts_russian.erp",
+          "payload": "fonts_russian.erp",
+          "sha256": "31ef1c1a5067bcd88cc54febcbfe48999e151b8e82dcc63903559f1576922a44",
+          "previous_sha256": []
+        },
+        {
+          "target": "2025_asset_groups\\ui_package\\fonts_russian_r_p.erp",
+          "payload": "fonts_russian_r_p.erp",
+          "sha256": "49f786c9f63d75d91d51fc1e5fe108b94456e3b3c1b5e3d0e0ca8a81363baf4c",
+          "previous_sha256": []
+        },
+        {
+          "target": "localisation\\2025_russian\\language_jap.lng",
+          "payload": "language.lng",
+          "sha256": "4ddea512f25907af268b1cc5ed8d307beb9dc2781da6751219333772bf15e2d1",
+          "previous_sha256": []
+        },
+        {
+          "target": "localisation\\2025_russian\\language_eng.lng",
+          "payload": "language.lng",
+          "sha256": "4ddea512f25907af268b1cc5ed8d307beb9dc2781da6751219333772bf15e2d1",
+          "previous_sha256": []
+        }
+      ],
+      "platform": "legacy",
+      "build_label": "F1 25 1.24.0 exact resource pair",
+      "language_set": "1.24",
+      "game_version": "1.24"
     }
   ],
   "audio_mode": {
@@ -564,6 +768,41 @@
       "records": 56134,
       "changed": 12301,
       "previous_sha256": []
+    }
+  },
+  "language_records": 56134,
+  "language_sets": {
+    "1.18": {
+      "records": 56439,
+      "version": "0.15.5.118",
+      "lng": "10ec45fec208c219b518f3220240feb95761a1f17ca7b8a3decfd37649df5094",
+      "previous_lng": [],
+      "payload": "language-1.18.lng",
+      "translation_variants": {
+        "original_names": {
+          "payload": "language-1.18-original-names.lng",
+          "sha256": "26416cff3c5be7dc54107a46ca5a8a2d0c2859e5906f56f89fa80df3779e3d4d",
+          "records": 56439,
+          "version": "0.15.5.118",
+          "previous_sha256": []
+        }
+      }
+    },
+    "1.24": {
+      "records": 55991,
+      "version": "0.15.5.124",
+      "lng": "4ddea512f25907af268b1cc5ed8d307beb9dc2781da6751219333772bf15e2d1",
+      "previous_lng": [],
+      "payload": "language-1.24.lng",
+      "translation_variants": {
+        "original_names": {
+          "payload": "language-1.24-original-names.lng",
+          "sha256": "3b0f0434178298fa36b320f7459b56c440de163b87800380bf2fa76e70dd1b25",
+          "records": 55991,
+          "version": "0.15.5.124",
+          "previous_sha256": []
+        }
+      }
     }
   }
 }

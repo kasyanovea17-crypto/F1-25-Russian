@@ -12,7 +12,7 @@ using System.Web.Script.Serialization;
 sealed class TextUpdate {
  public const string Repository="https://github.com/kasyanovea17-crypto/F1-25-Russian";
  public const string Channel="https://raw.githubusercontent.com/kasyanovea17-crypto/F1-25-Russian/main/updates/";
- public const string LauncherVersion="0.28";
+ public const string LauncherVersion="0.29";
  public string Version,Hash,Notes,Url; public int Bytes; public bool Available;
 }
 static class Updates {
@@ -23,12 +23,26 @@ static class Updates {
  public static string Hash(string p){using(var a=SHA256.Create())using(var s=File.OpenRead(p))return BitConverter.ToString(a.ComputeHash(s)).Replace("-","").ToLowerInvariant();}
  static void Write(string p,Dictionary<string,object> d){File.WriteAllText(p,Json.Serialize(d),new UTF8Encoding(true));}
  // Preserve the complete local install contract, including native font/profile
- // metadata and patch lists. A remote text channel may change four fields only.
+ // metadata and patch lists. Stable language hashes in CURRENT profiles are
+ // allowed to follow the root payload; legacy language sets/profiles are pinned.
+ static IEnumerable<Dictionary<string,object>> StableLanguageEntries(Dictionary<string,object> manifest){
+  object raw;if(!manifest.TryGetValue("native_profiles",out raw))yield break;
+  foreach(object item in (IEnumerable)raw){
+   var profile=(Dictionary<string,object>)item;object value;
+   if(profile.TryGetValue("language_set",out value)&&!String.IsNullOrEmpty(Convert.ToString(value)))continue;
+   if(profile.TryGetValue("game_version",out value)&&Convert.ToString(value)!="1.26")continue;
+   if(!profile.TryGetValue("install_files",out raw))continue;
+   foreach(object file in (IEnumerable)raw){var entry=(Dictionary<string,object>)file;
+    if(entry.TryGetValue("payload",out value)&&Convert.ToString(value)=="language.lng")yield return entry;
+   }
+  }
+ }
+ static void StableLanguageHash(Dictionary<string,object> manifest,string hash){foreach(var entry in StableLanguageEntries(manifest))entry["sha256"]=hash;}
  static string InstallContract(Dictionary<string,object> manifest){
   var copy=Parse(Json.Serialize(manifest));
   copy.Remove("previous_lng");copy.Remove("lng");copy.Remove("text_version");
   object raw;Require(copy.TryGetValue("payload",out raw)&&raw is Dictionary<string,object>,"Повреждено описание файлов пакета.");
-  ((Dictionary<string,object>)raw).Remove("language.lng");return Json.Serialize(copy);
+  ((Dictionary<string,object>)raw).Remove("language.lng");foreach(var entry in StableLanguageEntries(copy))entry.Remove("sha256");return Json.Serialize(copy);
  }
  static void WriteTextManifest(string file,Dictionary<string,object> manifest,string contract){
   Require(InstallContract(manifest)==contract,"Обновление изменяет параметры установки. Операция остановлена.");
@@ -65,6 +79,7 @@ static class Updates {
   if(V(version)==current)Require(hash==Field(m,"lng"),"Содержимое версии изменилось. Автору нужно выпустить новый номер пакета.");
   return new TextUpdate{Version=version,Hash=hash,Bytes=length,Url=TextUpdate.Channel+relative,Notes=d.ContainsKey("notes")?Field(d,"notes"):"Исправления русского текста.",Available=V(version)>current};
  }
+ public static TextUpdate Check(string home,Func<string,int,byte[]> fetch,string game){GameTextProfiles.RequireStableTarget(home,game);return Check(home,fetch);}
  static uint BE(byte[] b,int p){Require(p>=0&&p+4<=b.Length,"Повреждён заголовок LNG.");return ((uint)b[p]<<24)|((uint)b[p+1]<<16)|((uint)b[p+2]<<8)|b[p+3];}
  static Dictionary<string,int[]> Sections(byte[] b){
   Require(b.Length>=8&&Encoding.ASCII.GetString(b,0,4)=="LNGT"&&BE(b,4)==b.Length,"Повреждён файл перевода.");
@@ -98,6 +113,9 @@ static class Updates {
   foreach(string target in new[]{Path.Combine(home,"manifest.json"),Payload(home)})Require((File.GetAttributes(target)&FileAttributes.ReparsePoint)==0,"Файл пакета является ссылкой.");
  }
  public static string Apply(string home,TextUpdate update,Func<string,int,byte[]> fetch,string game,bool install,Func<string,string,string> engine){
+  // A stale/direct API call must be rejected before network, lock creation or writes.
+  if(!String.IsNullOrWhiteSpace(game))GameTextProfiles.RequireStableTarget(home,game);
+  else Require(!install,"Укажите и проверьте папку игры перед установкой обновления.");
   RealDirectories(home);using(var gate=new FileStream(Path.Combine(home,"update.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None)){
    Require(!File.Exists(Path.Combine(home,"update-pending.json")),"Сначала восстановите прерванное обновление.");
    // Recheck against current disk state; never trust a stale UI selection.
@@ -110,6 +128,7 @@ static class Updates {
    ValidateLanguage(Payload(home),Path.Combine(dir,"new.lng"));
    File.Copy(Payload(home),Path.Combine(dir,"old.lng"));File.Copy(Path.Combine(home,"manifest.json"),Path.Combine(dir,"old.json"));
    m["previous_lng"]=Previous(m,Field(m,"lng"));m["lng"]=fresh.Hash;m["text_version"]=fresh.Version;((Dictionary<string,object>)m["payload"])["language.lng"]=fresh.Hash;
+   StableLanguageHash(m,fresh.Hash);
    WriteTextManifest(Path.Combine(dir,"new.json"),m,contract);
    string pending=Path.Combine(home,"update-pending.json");Write(pending,new Dictionary<string,object>{{"transaction",Path.GetFileName(dir)},{"game",game},{"install",install},{"new_hash",fresh.Hash}});
    try{
@@ -124,8 +143,11 @@ static class Updates {
   }
  }
  public static string Recover(string home,Func<string,string,string> engine){
+  var preflight=Read(Path.Combine(home,"update-pending.json"));
+  if(Convert.ToBoolean(preflight["install"]))GameTextProfiles.RequireStableTarget(home,Field(preflight,"game"));
   RealDirectories(home);using(var gate=new FileStream(Path.Combine(home,"update.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None)){
    string p=Path.Combine(home,"update-pending.json");var journal=Read(p);string id=Field(journal,"transaction");Require(System.Text.RegularExpressions.Regex.IsMatch(id,"^[a-f0-9]{32}$"),"Повреждён журнал обновления.");
+   Require(Json.Serialize(journal)==Json.Serialize(preflight),"Журнал обновления изменился во время проверки.");
    string dir=Path.Combine(home,".updates",id);Require((File.GetAttributes(dir)&FileAttributes.ReparsePoint)==0,"Транзакция является ссылкой.");
    var old=Read(Path.Combine(dir,"old.json"));Require(Hash(Path.Combine(dir,"old.lng"))==Field(old,"lng"),"Копия предыдущего текста повреждена.");
    string contract=InstallContract(old);old["previous_lng"]=Previous(old,Field(journal,"new_hash"));WriteTextManifest(Path.Combine(dir,"recovery.json"),old,contract);

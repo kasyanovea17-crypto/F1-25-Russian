@@ -1,13 +1,17 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
 class UpdateTests {
  static string oldVersion,newVersion;
- static int checks=0;static string root,baseHome,home;static Dictionary<string,object> channel;static byte[] next;static JavaScriptSerializer json=new JavaScriptSerializer();
+ static int checks=0;static string root,baseHome,home,game;static Dictionary<string,object> channel;static byte[] next;static JavaScriptSerializer json=new JavaScriptSerializer();
  static void Check(bool b,string m){if(!b)throw new Exception(m);checks++;}
- static void Reset(string id){home=Path.Combine(root,id);Directory.CreateDirectory(Path.Combine(home,"payload"));File.Copy(Path.Combine(baseHome,"manifest.json"),Path.Combine(home,"manifest.json"));File.Copy(Path.Combine(baseHome,"payload","language.lng"),Path.Combine(home,"payload","language.lng"));channel=Updates.Read(Path.Combine(root,"channel.json"));oldVersion=Updates.LocalVersion(home);newVersion=Convert.ToString(channel["version"]);next=File.ReadAllBytes(Path.Combine(root,"next.lng"));}
+ static void Reset(string id){home=Path.Combine(root,id);Directory.CreateDirectory(Path.Combine(home,"payload"));File.Copy(Path.Combine(baseHome,"manifest.json"),Path.Combine(home,"manifest.json"));File.Copy(Path.Combine(baseHome,"payload","language.lng"),Path.Combine(home,"payload","language.lng"));channel=Updates.Read(Path.Combine(root,"channel.json"));oldVersion=Updates.LocalVersion(home);newVersion=Convert.ToString(channel["version"]);next=File.ReadAllBytes(Path.Combine(root,"next.lng"));
+  game=Path.Combine(home,"fixture-game");Directory.CreateDirectory(game);File.WriteAllText(Path.Combine(game,"F1_25.exe"),"STATIC TEST IDENTITY; NEVER EXECUTED");
+  var local=Updates.Read(Path.Combine(home,"manifest.json"));foreach(object item in (System.Collections.IEnumerable)local["native_profiles"]){var profile=(Dictionary<string,object>)item;object value;if(!profile.TryGetValue("language_set",out value)||String.IsNullOrEmpty(Convert.ToString(value))){profile["exe_sha256"]=Updates.Hash(Path.Combine(game,"F1_25.exe"));break;}}
+  File.WriteAllText(Path.Combine(home,"manifest.json"),json.Serialize(local),Encoding.UTF8);
+ }
  static byte[] Fetch(string u,int max){var b=u.EndsWith("stable.json")?Encoding.UTF8.GetBytes(json.Serialize(channel)):next;Check(b.Length<=max,"fetch limit");return b;}
  static void Reject(Action a,string label){try{a();}catch{checks++;Console.WriteLine("PASS "+label);return;}throw new Exception("Expected rejection: "+label);}
  static string P(){return Path.Combine(home,"payload","language.lng");}
@@ -19,6 +23,18 @@ class UpdateTests {
     var a=(Dictionary<string,object>)item.Value;var b=(Dictionary<string,object>)after[item.Key];
     foreach(var part in a)if(part.Key!="language.lng")Check(json.Serialize(part.Value)==json.Serialize(b[part.Key]),"preserved payload "+part.Key);
     Check(a.Count==b.Count,"payload field count");
+   }else if(item.Key=="native_profiles"){
+    var left=json.DeserializeObject(json.Serialize(item.Value));var right=json.DeserializeObject(json.Serialize(after[item.Key]));
+    foreach(object list in new[]{left,right})foreach(object raw in (System.Collections.IEnumerable)list){
+     var profile=(Dictionary<string,object>)raw;object set;
+     if(profile.TryGetValue("language_set",out set)&&!String.IsNullOrEmpty(Convert.ToString(set)))continue;
+     foreach(object file in (System.Collections.IEnumerable)profile["install_files"]){var entry=(Dictionary<string,object>)file;if(Convert.ToString(entry["payload"])=="language.lng")entry.Remove("sha256");}
+    }
+    Check(json.Serialize(left)==json.Serialize(right),"all profiles preserved except current text hashes; legacy untouched");
+    foreach(object raw in (System.Collections.IEnumerable)after["native_profiles"]){var profile=(Dictionary<string,object>)raw;object set;
+     if(profile.TryGetValue("language_set",out set)&&!String.IsNullOrEmpty(Convert.ToString(set)))continue;
+     foreach(object file in (System.Collections.IEnumerable)profile["install_files"]){var entry=(Dictionary<string,object>)file;if(Convert.ToString(entry["payload"])=="language.lng")Check(Convert.ToString(entry["sha256"])==Convert.ToString(after["lng"]),"current profile text hash follows current payload");}
+    }
    }else Check(json.Serialize(item.Value)==json.Serialize(after[item.Key]),"unchanged install field "+item.Key);
   }
   Check(before.Count==after.Count,"manifest field count");
@@ -26,8 +42,8 @@ class UpdateTests {
  static int Main(string[] args){try{root=Path.GetFullPath(args[0]);baseHome=Path.GetFullPath(args[1]);
   Reset("same");channel["version"]=oldVersion;channel["sha256"]=Updates.Hash(P());channel["file"]=oldVersion+"/language.lng";Check(!Updates.Check(home,Fetch).Available,"same version");
   Reset("local");var u=Updates.Check(home,Fetch);Check(u.Available,"new version");string text=Updates.Apply(home,u,Fetch,"",false,(h,g)=>{throw new Exception("must not run engine");});Check(text.StartsWith("UPDATE PASS")&&Updates.Hash(P())==u.Hash&&Updates.LocalVersion(home)==newVersion,"local update");Check(!File.Exists(Path.Combine(home,"update-pending.json")),"committed journal");
-  Reset("game");u=Updates.Check(home,Fetch);int calls=0;Updates.Apply(home,u,Fetch,"test-game",true,(h,g)=>{Check(Updates.Hash(P())==u.Hash&&g=="test-game","engine receives new text");calls++;return "INSTALL PASS (fixture)";});Check(calls==1,"one install");
-  Reset("failure");u=Updates.Check(home,Fetch);string old=Updates.Hash(P());Reject(()=>Updates.Apply(home,u,Fetch,"test-game",true,(h,g)=>{throw new IOException("simulated engine failure");}),"engine error");Check(Updates.Hash(P())==old&&Updates.LocalVersion(home)==oldVersion,"local rollback");Reject(()=>Updates.Check(home,Fetch),"pending operation");Check(Updates.Recover(home,(h,g)=>{Check(Updates.Hash(P())==old,"previous text recovered");return "RESTORE FIXTURE";}).StartsWith("RECOVERY PASS"),"explicit recovery");Check(!File.Exists(Path.Combine(home,"update-pending.json")),"recovery journal");
+  Reset("game");u=Updates.Check(home,Fetch);int calls=0;Updates.Apply(home,u,Fetch,game,true,(h,g)=>{Check(Updates.Hash(P())==u.Hash&&g==game,"engine receives new text");calls++;return "INSTALL PASS (fixture)";});Check(calls==1,"one install");
+  Reset("failure");u=Updates.Check(home,Fetch);string old=Updates.Hash(P());Reject(()=>Updates.Apply(home,u,Fetch,game,true,(h,g)=>{throw new IOException("simulated engine failure");}),"engine error");Check(Updates.Hash(P())==old&&Updates.LocalVersion(home)==oldVersion,"local rollback");Reject(()=>Updates.Check(home,Fetch),"pending operation");Check(Updates.Recover(home,(h,g)=>{Check(Updates.Hash(P())==old,"previous text recovered");return "RESTORE FIXTURE";}).StartsWith("RECOVERY PASS"),"explicit recovery");Check(!File.Exists(Path.Combine(home,"update-pending.json")),"recovery journal");
   Reset("native-contract");var before=Updates.Read(Path.Combine(home,"manifest.json"));
   File.WriteAllText(Path.Combine(home,"payload","fonts_russian.erp"),"NATIVE FONT SENTINEL");
   File.WriteAllText(Path.Combine(home,"payload","native-config.patch"),"NATIVE PATCH SENTINEL");
@@ -40,7 +56,7 @@ class UpdateTests {
   Check(Updates.Hash(Path.Combine(home,"payload","native-config.patch"))==patchHash,"patch payload unchanged");
   Console.WriteLine("PASS native schema/profile/patch metadata preserved; remote install fields ignored");
   Reset("native-recovery");before=Updates.Read(Path.Combine(home,"manifest.json"));u=Updates.Check(home,Fetch);
-  Reject(()=>Updates.Apply(home,u,Fetch,"test-game",true,(h,g)=>{throw new IOException("fixture engine failure");}),"native rollback failure injection");
+  Reject(()=>Updates.Apply(home,u,Fetch,game,true,(h,g)=>{throw new IOException("fixture engine failure");}),"native rollback failure injection");
   Preserved(before,Updates.Read(Path.Combine(home,"manifest.json")));
   Updates.Recover(home,(h,g)=>"RESTORED FIXTURE");Preserved(before,Updates.Read(Path.Combine(home,"manifest.json")));
   Console.WriteLine("PASS native install metadata preserved through rollback and recovery");

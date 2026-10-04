@@ -51,8 +51,8 @@ sealed partial class Launcher : Form {
  readonly Color muted=Color.FromArgb(98,101,101),accent=Color.FromArgb(251,189,20),green=Color.FromArgb(32,114,61);
  readonly ToolTip contactTips=new ToolTip();readonly Dictionary<string,Panel> pages=new Dictionary<string,Panel>();readonly Dictionary<string,UiButton> nav=new Dictionary<string,UiButton>();
  const string TelegramUrl="https://t.me/Arete_Eudaimonia_Ataraxia",SteamUrl="https://steamcommunity.com/profiles/76561198993070335/",MailUrl="mailto:sobesednik617@gmail.com",GuideUrl="https://steamcommunity.com/sharedfiles/filedetails/?id=3800786076";
- TextBox path,logBox;CheckBox ready,installUpdate;Button prepare,install,restore,browse,help,details,closeButton,minimize,checkUpdate,applyUpdate,recoverUpdate;
- Label statusTitle,statusText,phase,packageVersion,updateMessage;ProgressBar progress;bool busy,prepared;Image backdrop;TextUpdate candidate;
+ TextBox path,logBox;CheckBox ready,installUpdate;Button prepare,install,restore,browse,help,details,closeButton,minimize,checkUpdate,applyUpdate,recoverUpdate,downloadRelease;
+ Label statusTitle,statusText,phase,packageVersion,updateMessage;ProgressBar progress;bool busy,prepared;Image backdrop;TextUpdate candidate;GameTextProfile detectedProfile;
  ComboBox translation;Label translationHint;string translationPreferencePath;
  ComboBox voice;Label voiceStatus,voiceSummary;Button voiceSteam,voiceRefresh;bool testing;string voicePreferencePath;
  string lastLog="Операции ещё не выполнялись. Игра автоматически не запускается.";string currentPage="install";
@@ -60,7 +60,7 @@ sealed partial class Launcher : Form {
  [System.Runtime.InteropServices.DllImport("user32.dll")]static extern IntPtr SendMessage(IntPtr h,int m,IntPtr w,IntPtr l);
  Launcher(bool testMode){
   testing=testMode;translationPreferencePath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Karsvein","F1RU","text-variant.txt");voicePreferencePath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Karsvein","F1RU","voice-language.txt");
-  Glyphs.Load(home);Text="F1 25 · Русский текст · 0.28";ClientSize=new Size(960,680);FormBorderStyle=FormBorderStyle.None;StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;BackColor=Color.Black;ForeColor=Color.Black;Font=new Font("Segoe UI",9.5f);DoubleBuffered=true;
+  Glyphs.Load(home);Text="F1 25 · Русский текст · 0.29";ClientSize=new Size(960,680);FormBorderStyle=FormBorderStyle.None;StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;BackColor=Color.Black;ForeColor=Color.Black;Font=new Font("Segoe UI",9.5f);DoubleBuffered=true;
   if(File.Exists(Path.Combine(home,"background.png")))using(var image=Image.FromFile(Path.Combine(home,"background.png")))backdrop=new Bitmap(image);
   using(var clip=Shape.Round(ClientRectangle,36))Region=new Region(clip);
   MouseDown+=(s,e)=>{if(e.Button==MouseButtons.Left){ReleaseCapture();SendMessage(Handle,0xA1,new IntPtr(2),IntPtr.Zero);}};
@@ -71,7 +71,7 @@ sealed partial class Launcher : Form {
   LabelAt(this,"Папка игры",220,116,390,22,9,FontStyle.Regular,muted);
   var location=new Card{Bounds=new Rectangle(220,141,400,40),BackColor=Color.FromArgb(237,238,234),Radius=12};Controls.Add(location);
   path=new TextBox{Bounds=new Rectangle(12,12,332,22),BorderStyle=BorderStyle.None,Font=new Font("Segoe UI",9),BackColor=location.BackColor,Text=@"C:\Program Files (x86)\Steam\steamapps\common\F1 25",AccessibleName="Папка игры F1 25"};location.Controls.Add(path);
-  path.TextChanged+=(s,e)=>{prepared=false;RefreshControls();RefreshVoice();SetStatus("Путь изменён","Проверьте выбранную папку перед установкой.",muted);};
+  path.TextChanged+=(s,e)=>{InvalidatePreparation();RefreshTranslation();RefreshControls();RefreshVoice();SetStatus("Путь изменён","Проверьте выбранную папку перед установкой.",muted);};
   browse=ButtonAt(location,"",351,5,39,30,false,0xf3d8);browse.AccessibleName="Выбрать папку игры";contactTips.SetToolTip(browse,"Выбрать папку F1 25");browse.Click+=(s,e)=>{using(var d=new FolderBrowserDialog()){d.Description="Папка F1 25";if(Directory.Exists(path.Text))d.SelectedPath=path.Text;if(d.ShowDialog(this)==DialogResult.OK)path.Text=d.SelectedPath;}};
   Nav("install","Установка",0xf423,182);Nav("voice","Озвучка",-1,230);Nav("updates","Обновления",0xf130,278);Nav("restore","Вернуть оригинал",0xf117,326);
   LabelAt(this,"ПОМОЩЬ",38,382,171,20,8,FontStyle.Bold,Color.FromArgb(156,163,165));
@@ -91,7 +91,7 @@ sealed partial class Launcher : Form {
   LabelAt(tip,"Небольшие обновления допускаются,\nесли ресурсы перевода не изменены.\n\nНовая структура — новая проверка.\nИсходные файлы сохраняются.",20,52,234,104,9,FontStyle.Regular,muted);
   help=ButtonAt(this,"Руководство в Steam",650,533,270,38,false,0xf194);help.Click+=(s,e)=>OpenContact(GuideUrl);
   packageVersion=LabelAt(this,"",653,590,272,22,9,FontStyle.Regular,muted);
-  LabelAt(this,"Лаунчер 0.28",653,612,266,22,9,FontStyle.Bold,Color.Black);
+  LabelAt(this,"Лаунчер 0.29",653,612,266,22,9,FontStyle.Bold,Color.Black);
   LabelAt(this,"Разработано Karsvein",653,635,266,22,9,FontStyle.Regular,muted);
   BuildInstall();BuildVoice();BuildUpdates();BuildRestore();BuildHelp();BuildLog();BuildAbout();RefreshTranslation();ShowPage("install");RefreshVersions();RefreshControls();
   Activated+=(s,e)=>{if(!busy)RefreshVoice();};
@@ -115,17 +115,25 @@ sealed partial class Launcher : Form {
   translation.SelectedIndex=!testing&&TranslationVariants.Load(translationPreferencePath)==TranslationVariants.OriginalNames?1:0;
   translationHint=LabelAt(two,"",20,79,359,35,8.5f,FontStyle.Regular,muted);
   contactTips.SetToolTip(translation,"Оригинальные имена: пилоты, команды и трассы как в английской версии; остальной текст на русском.");
-  translation.SelectedIndexChanged+=(s,e)=>{prepared=false;ready.Checked=false;candidate=null;
+  translation.SelectedIndexChanged+=(s,e)=>{InvalidatePreparation();ready.Checked=false;
    try{if(!testing)TranslationVariants.Save(translationPreferencePath,SelectedTranslation);SetStatus("Вариант перевода выбран","Проверьте совместимость и установите выбранный вариант.",accent);}catch(Exception ex){SetStatus("Выбор не сохранён",ex.Message,accent);}
    RefreshTranslation();RefreshControls();};
   install=ButtonAt(two,"2  Установить перевод",20,121,359,36,true);install.Click+=(s,e)=>{if(prepared&&ready.Checked&&!busy)Run("install");};
  }
  string SelectedTranslation { get { return translation!=null&&translation.SelectedIndex==1?TranslationVariants.OriginalNames:TranslationVariants.Russian; } }
+ void InvalidatePreparation(){prepared=false;candidate=null;detectedProfile=null;if(installUpdate!=null)installUpdate.Checked=false;RefreshVersions();}
+ bool CanUpdateText { get { return prepared&&detectedProfile!=null&&detectedProfile.Stable&&detectedProfile.Matches(path.Text,SelectedTranslation)&&SelectedTranslation==TranslationVariants.Russian; } }
  void RefreshTranslation(){
   bool original=SelectedTranslation==TranslationVariants.OriginalNames;
   if(translationHint!=null)translationHint.Text=original?"Пилоты, команды и трассы — как в оригинале.\nОстальной текст и субтитры — на русском.":"Обычная русская версия текста.\nШрифты и выбор озвучки не меняются.";
-  if(updateMessage!=null)updateMessage.Text=original?"Вариант с оригинальными именами входит в\nполный архив лаунчера. Обновляйте его через\nReleases на GitHub. Обычный канал текста\nне заменяет этот вариант.":"Нажмите «Проверить обновления».\nОбновляется обычный русский перевод.\nДля оригинальных имён скачайте полный архив.";
+  if(updateMessage!=null){
+   if(detectedProfile==null)updateMessage.Text="Сначала проверьте совместимость игры\nна вкладке «Установка». Версия и канал\nтекста определяются для выбранной папки.";
+   else if(!detectedProfile.Stable)updateMessage.Text="F1 25 "+detectedProfile.GameVersion+" · текст "+detectedProfile.TextVersion+".\nЭтот перевод обновляется только полным\nархивом лаунчера через Releases на GitHub.\nКанал текста 1.26 к этой версии не применяется.";
+   else updateMessage.Text=original?"Вариант с оригинальными именами входит в\nполный архив лаунчера. Обновляйте его через\nReleases на GitHub. Обычный канал текста\nне заменяет этот вариант.":"Подтверждена F1 25 "+detectedProfile.GameVersion+".\nНажмите «Проверить обновления».\nОбновляется обычный русский перевод.";
+  }
+  RefreshVersions();
  }
+
  string SelectedVoice { get { return voice!=null&&voice.SelectedIndex==1?"japanese":"english"; } }
  static string VoiceTitle(string language){return language=="english"?"Английская / English":language=="japanese"?"Японская / Japanese":"Не определён";}
  static string ParseSteamVoice(string text){
@@ -166,7 +174,7 @@ sealed partial class Launcher : Form {
   };
   voiceRefresh=ButtonAt(c,"Проверить выбранный язык",20,213,359,33,false);voiceRefresh.Click+=(s,e)=>RefreshVoice();
   LabelAt(c,"Выбор здесь сохраняет предпочтение, но сам\nне меняет язык клиента. После смены языка\nдождитесь загрузки и установите перевод заново.\n\nВ игре проверьте язык радио и комментариев.\nТекст и субтитры остаются русскими.",20,260,361,100,9,FontStyle.Regular,muted);
-  voice.SelectedIndexChanged+=(s,e)=>{prepared=false;ready.Checked=false;try{if(!testing)SaveVoice(voicePreferencePath,SelectedVoice);SetStatus("Выбор озвучки сохранён","Примените язык в клиенте и проверьте файлы заново.",accent);}catch(Exception ex){SetStatus("Выбор не сохранён",ex.Message,accent);}RefreshVoice();RefreshControls();};
+  voice.SelectedIndexChanged+=(s,e)=>{InvalidatePreparation();ready.Checked=false;RefreshTranslation();try{if(!testing)SaveVoice(voicePreferencePath,SelectedVoice);SetStatus("Выбор озвучки сохранён","Примените язык в клиенте и проверьте файлы заново.",accent);}catch(Exception ex){SetStatus("Выбор не сохранён",ex.Message,accent);}RefreshVoice();RefreshControls();};
   RefreshVoice();
  }
  void RefreshVoice(){
@@ -181,6 +189,7 @@ sealed partial class Launcher : Form {
   LabelAt(c,"Новый перевод, тот же лаунчер",20,20,360,27,12,FontStyle.Bold,Color.Black);
   updateMessage=LabelAt(c,"Нажмите «Проверить обновления».\nОбновляются только текст и субтитры.\nШрифтовой пакет и настройки сохраняются.",20,59,360,86,9.5f,FontStyle.Regular,muted);
   checkUpdate=ButtonAt(c,"Проверить обновления",20,149,359,35,true,0xf130);checkUpdate.Click+=(s,e)=>CheckUpdates();
+  downloadRelease=ButtonAt(c,"Полный архив · GitHub Releases",20,149,359,35,true,0xf1c6);downloadRelease.Click+=(s,e)=>OpenContact(TextUpdate.Repository+"/releases");
   installUpdate=new CheckBox{Bounds=new Rectangle(20,198,360,48),Text="После загрузки установить также в игру\n(игра должна быть закрыта)",BackColor=Color.White};c.Controls.Add(installUpdate);
   applyUpdate=ButtonAt(c,"Обновить перевод",20,256,359,35,false);applyUpdate.Click+=(s,e)=>ApplyUpdate();
   recoverUpdate=ButtonAt(c,"Восстановить обновление",20,306,359,35,false);recoverUpdate.Click+=(s,e)=>RecoverUpdate();
@@ -199,21 +208,21 @@ sealed partial class Launcher : Form {
   var git=ButtonAt(c,"Открыть GitHub",20,306,359,35,false);git.Click+=(s,e)=>OpenContact(TextUpdate.Repository);
  }
  void ContactAt(string title,int x,int y,int glyph,Color brand,string url){var b=new UiButton{Contact=true,Glyph=glyph,Brand=brand,Bounds=new Rectangle(x,y,76,70),AccessibleName=title,AccessibleDescription=url};Controls.Add(b);contactTips.SetToolTip(b,url);b.Click+=(s,e)=>OpenContact(url);var caption=LabelAt(this,title,x-2,y+69,77,23,8.5f,FontStyle.Regular,muted);caption.TextAlign=ContentAlignment.TopCenter;}
- bool IsContact(string s){return s==TelegramUrl||s==SteamUrl||s==MailUrl||s==GuideUrl||s==TextUpdate.Repository;}
+ bool IsContact(string s){return s==TelegramUrl||s==SteamUrl||s==MailUrl||s==GuideUrl||s==TextUpdate.Repository||s==TextUpdate.Repository+"/releases";}
  void OpenContact(string s){if(!IsContact(s))return;try{Process.Start(new ProcessStartInfo(s){UseShellExecute=true});}catch(Exception ex){MessageBox.Show(this,"Адрес: "+s+"\n\n"+ex.Message,"Открыть ссылку");}}
  Label LabelAt(Control parent,string text,int x,int y,int w,int h,float size,FontStyle style,Color color){var l=new Label{Text=text,Bounds=new Rectangle(x,y,w,h),Font=new Font(size>=19?"Bahnschrift":"Segoe UI",size,style),ForeColor=color,BackColor=Color.Transparent,UseMnemonic=false};parent.Controls.Add(l);return l;}
  Button ButtonAt(Control parent,string text,int x,int y,int w,int h,bool primary,int glyph=0){var b=new UiButton{Primary=primary,Glyph=glyph,Text=text,Bounds=new Rectangle(x,y,w,h),Font=new Font("Segoe UI",9.5f,FontStyle.Bold),AccessibleName=text};parent.Controls.Add(b);return b;}
- void RefreshVersions(){if(packageVersion!=null)packageVersion.Text="Версия перевода: "+Updates.LocalVersion(home);}
- void RefreshControls(){if(prepare==null||install==null)return;bool pending=File.Exists(Path.Combine(home,"update-pending.json"));prepare.Enabled=!busy&&!pending;install.Enabled=!busy&&!pending&&prepared&&ready.Checked;restore.Enabled=!busy&&!pending;browse.Enabled=!busy;path.Enabled=!busy;ready.Enabled=!busy;help.Enabled=!busy;details.Enabled=!busy;checkUpdate.Enabled=!busy&&SelectedTranslation==TranslationVariants.Russian;applyUpdate.Enabled=!busy&&SelectedTranslation==TranslationVariants.Russian&&candidate!=null&&candidate.Available;recoverUpdate.Enabled=!busy&&File.Exists(Path.Combine(home,"update-pending.json"));installUpdate.Enabled=!busy&&SelectedTranslation==TranslationVariants.Russian;translation.Enabled=!busy&&!pending;voice.Enabled=!busy;voiceSteam.Enabled=!busy;voiceRefresh.Enabled=!busy;progress.Visible=busy;closeButton.Enabled=!busy;AcceptButton=currentPage=="install"?(install.Enabled?install:prepare):currentPage=="updates"?checkUpdate:null;}
+ void RefreshVersions(){if(packageVersion!=null)packageVersion.Text=detectedProfile==null?"Игра: версия ещё не проверена":"F1 25 "+detectedProfile.GameVersion+" · текст "+detectedProfile.TextVersion;}
+ void RefreshControls(){if(prepare==null||install==null)return;bool pending=File.Exists(Path.Combine(home,"update-pending.json"));prepare.Enabled=!busy&&!pending;install.Enabled=!busy&&!pending&&prepared&&ready.Checked;restore.Enabled=!busy&&!pending;browse.Enabled=!busy;path.Enabled=!busy;ready.Enabled=!busy;help.Enabled=!busy;details.Enabled=!busy;checkUpdate.Enabled=!busy&&CanUpdateText;bool fullArchive=SelectedTranslation==TranslationVariants.OriginalNames||(detectedProfile!=null&&!detectedProfile.Stable);checkUpdate.Visible=!fullArchive;downloadRelease.Visible=fullArchive;downloadRelease.Enabled=!busy;applyUpdate.Enabled=!busy&&CanUpdateText&&candidate!=null&&candidate.Available;recoverUpdate.Enabled=!busy&&File.Exists(Path.Combine(home,"update-pending.json"));installUpdate.Enabled=!busy&&CanUpdateText;translation.Enabled=!busy&&!pending;voice.Enabled=!busy;voiceSteam.Enabled=!busy;voiceRefresh.Enabled=!busy;progress.Visible=busy;closeButton.Enabled=!busy;AcceptButton=currentPage=="install"?(install.Enabled?install:prepare):currentPage=="updates"?checkUpdate:null;}
  void SetStatus(string title,string text,Color color){if(statusTitle==null)return;statusTitle.Text=title;statusText.Text=text.Length>120?text.Substring(0,117)+"…":text;phase.BackColor=color;}
  void ShowLog(){ShowPage("log");}
  void StartJob(string title,Func<string> job,Action done){if(busy)return;busy=true;SetStatus(title,"Дождитесь завершения операции.",accent);RefreshControls();ThreadPool.QueueUserWorkItem(delegate{string result;bool ok=true;try{result=job();}catch(Exception ex){ok=false;result=ex.Message;}if(!IsDisposed)BeginInvoke((Action)delegate{busy=false;lastLog=result;logBox.Text=result;SetStatus(ok?"Готово":"Операция не завершена",result,ok?green:Color.FromArgb(171,63,28));RefreshVersions();if(currentPage=="updates")updateMessage.Text=result;if(ok&&done!=null)done();RefreshControls();});});}
- void CheckUpdates(){if(SelectedTranslation!=TranslationVariants.Russian)return;candidate=null;RefreshControls();StartJob("Проверяем GitHub…",delegate{candidate=Updates.Check(home,Updates.Download);return candidate.Available?"Доступен перевод "+candidate.Version+". "+candidate.Notes:"У вас актуальный перевод "+candidate.Version+".";},delegate{updateMessage.Text=lastLog;installUpdate.Checked=File.Exists(Path.Combine(path.Text.Trim(),"localisation","2025_russian","language_jap.lng"));});}
+ void CheckUpdates(){if(!CanUpdateText)return;string game=path.Text.Trim();candidate=null;RefreshControls();StartJob("Проверяем GitHub…",delegate{candidate=Updates.Check(home,Updates.Download,game);return candidate.Available?"Доступен перевод "+candidate.Version+". "+candidate.Notes:"У вас актуальный перевод "+candidate.Version+".";},delegate{if(!CanUpdateText){candidate=null;RefreshTranslation();return;}updateMessage.Text=lastLog;installUpdate.Checked=File.Exists(Path.Combine(path.Text.Trim(),"localisation","2025_russian","language_jap.lng"));});}
  static string EngineInstall(string h,string game){var si=new ProcessStartInfo("powershell.exe","-NoProfile -ExecutionPolicy Bypass -File \""+Path.Combine(h,"Engine.ps1")+"\" -Action install -GamePath \""+game.TrimEnd('\\')+"\""){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true,StandardOutputEncoding=Encoding.UTF8,StandardErrorEncoding=Encoding.UTF8};using(var p=Process.Start(si)){var err=p.StandardError.ReadToEndAsync();var result=p.StandardOutput.ReadToEnd();p.WaitForExit();result+=err.Result;if(p.ExitCode!=0)throw new IOException(result);return result;}}
- void ApplyUpdate(){if(SelectedTranslation!=TranslationVariants.Russian||candidate==null||!candidate.Available||busy)return;bool apply=installUpdate.Checked;string game=path.Text.Trim();if(game.IndexOf('"')>=0||game.Length==0){SetStatus("Проверьте папку","Укажите полный путь к F1 25.",accent);return;}if(MessageBox.Show(this,"Скачать перевод "+candidate.Version+" из GitHub?\n"+(apply?"Пакет будет также установлен в выбранную папку игры. Закройте игру.":"Обновится пакет в лаунчере. Игра останется без изменений."),"Обновить перевод",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)!=DialogResult.Yes)return;
-  StartJob("Обновляем перевод…",delegate{return Updates.Apply(home,candidate,Updates.Download,game,apply,EngineInstall);},delegate{candidate=null;prepared=false;updateMessage.Text="Перевод обновлён до "+Updates.LocalVersion(home)+".";});
+ void ApplyUpdate(){if(!CanUpdateText||candidate==null||!candidate.Available||busy)return;bool apply=installUpdate.Checked;string game=path.Text.Trim();if(game.IndexOf('"')>=0||game.Length==0){SetStatus("Проверьте папку","Укажите полный путь к F1 25.",accent);return;}if(MessageBox.Show(this,"Скачать перевод "+candidate.Version+" из GitHub?\n"+(apply?"Пакет будет также установлен в выбранную папку игры. Закройте игру.":"Обновится пакет в лаунчере. Игра останется без изменений."),"Обновить перевод",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)!=DialogResult.Yes)return;
+  StartJob("Обновляем перевод…",delegate{return Updates.Apply(home,candidate,Updates.Download,game,apply,EngineInstall);},delegate{InvalidatePreparation();updateMessage.Text="Перевод обновлён до "+Updates.LocalVersion(home)+". Перед установкой снова проверьте совместимость.";});
  }
- void RecoverUpdate(){if(busy)return;if(MessageBox.Show(this,"Восстановить предыдущий пакет после прерванного обновления?\nЕсли обновлялась игра, предыдущий текст будет установлен обратно. Закройте игру.","Восстановление обновления",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)!=DialogResult.Yes)return;StartJob("Восстанавливаем пакет…",delegate{return Updates.Recover(home,EngineInstall);},delegate{prepared=false;candidate=null;updateMessage.Text="Предыдущий пакет восстановлен.";});}
+ void RecoverUpdate(){if(busy)return;if(MessageBox.Show(this,"Восстановить предыдущий пакет после прерванного обновления?\nЕсли обновлялась игра, предыдущий текст будет установлен обратно. Закройте игру.","Восстановление обновления",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)!=DialogResult.Yes)return;StartJob("Восстанавливаем пакет…",delegate{return Updates.Recover(home,EngineInstall);},delegate{InvalidatePreparation();updateMessage.Text="Предыдущий пакет восстановлен.";});}
  protected override void OnPaintBackground(PaintEventArgs e){
   var g=e.Graphics;g.Clear(Color.Black);var saved=g.Save();g.SmoothingMode=SmoothingMode.AntiAlias;
   // The window's entire exterior is black; only the inset is white. No inset
@@ -226,33 +235,45 @@ sealed partial class Launcher : Form {
  }
  protected override void OnFormClosing(FormClosingEventArgs e){if(busy){e.Cancel=true;return;}base.OnFormClosing(e);}
  protected override void Dispose(bool disposing){if(disposing){contactTips.Dispose();if(backdrop!=null)backdrop.Dispose();}base.Dispose(disposing);}
-  void ApplyResult(string action,int code,string output){
-  busy=false;lastLog=output+"\r\nКод завершения: "+code;
+  void ApplyResult(string action,int code,string output,string expectedGame=null,string expectedVariant=null){
+  busy=false;
+  try{if((expectedGame!=null&&!String.Equals(GameTextProfiles.CanonicalPath(expectedGame),GameTextProfiles.CanonicalPath(path.Text),StringComparison.OrdinalIgnoreCase))||(expectedVariant!=null&&expectedVariant!=SelectedTranslation)){InvalidatePreparation();RefreshTranslation();RefreshControls();SetStatus("Выбор изменён","Повторите проверку выбранной папки и варианта.",accent);return;}}
+  catch(Exception ex){code=1;output+="\r\nОШИБКА: "+ex.Message;}
+  if(code==0&&(action=="prepare"||action=="install")){
+   try{detectedProfile=GameTextProfiles.Parse(output,path.Text,SelectedTranslation);}
+   catch(Exception ex){code=1;output+="\r\nОШИБКА: "+ex.Message;}
+  }
+  lastLog=output+"\r\nКод завершения: "+code;
   if(code==0){
-   if(action=="prepare"){prepared=true;SetStatus("Файлы совместимы",ready.Checked?"Совместимость подтверждена. Можно устанавливать перевод.":"Подтвердите подготовку галочкой.",green);}
-   else if(action=="install"){prepared=true;SetStatus("Перевод установлен","Готово. Запускайте игру через свой клиент: Steam или EA app.",green);}
-   else{prepared=false;SetStatus("Оригинал восстановлен","Перевод удалён. Язык можно сменить в клиенте игры.",green);}
-  }else{prepared=false;string reason=output.Trim();int at=reason.LastIndexOf("ОШИБКА:");if(at>=0)reason=reason.Substring(at+7).Trim();if(reason.Length>150)reason=reason.Substring(0,147)+"…";SetStatus("Операция не завершена",reason.Length==0?"Подробности — в журнале операции.":reason,Color.FromArgb(172,73,12));}
-  RefreshControls();
+   if(action=="prepare"){candidate=null;prepared=true;RefreshTranslation();SetStatus("Файлы совместимы","F1 25 "+detectedProfile.GameVersion+" · перевод "+detectedProfile.TextVersion+". "+(ready.Checked?"Можно устанавливать.":"Подтвердите подготовку галочкой."),green);}
+   else if(action=="install"){prepared=true;RefreshTranslation();SetStatus("Перевод установлен","F1 25 "+detectedProfile.GameVersion+" · перевод "+detectedProfile.TextVersion+". Запускайте игру через свой клиент.",green);}
+   else{InvalidatePreparation();RefreshTranslation();SetStatus("Оригинал восстановлен","Перевод удалён. Язык можно сменить в клиенте игры.",green);}
+  }else{InvalidatePreparation();RefreshTranslation();string reason=output.Trim();int at=reason.LastIndexOf("ОШИБКА:");if(at>=0)reason=reason.Substring(at+7).Trim();if(reason.Length>150)reason=reason.Substring(0,147)+"…";SetStatus("Операция не завершена",reason.Length==0?"Подробности — в журнале операции.":reason,Color.FromArgb(172,73,12));}
+  RefreshVersions();RefreshControls();
  }
+
  void Run(string action){
+  if(action=="install"&&(!prepared||detectedProfile==null||!detectedProfile.Matches(path.Text,SelectedTranslation)))return;
+  if(action=="prepare")InvalidatePreparation();
   if(action!="restore"){string actual=SteamVoice();if(actual.Length>0&&actual!=SelectedVoice){prepared=false;RefreshControls();ShowPage("voice");SetStatus("Язык Steam отличается","Примените выбранную озвучку в Steam или измените выбор здесь.",accent);return;}}
   string variant=SelectedTranslation;string game=path.Text.Trim();if(game.Length==0||game.IndexOf('"')>=0){SetStatus("Проверьте папку игры","Укажите полный путь к установленной F1 25.",accent);return;}
+  try{game=GameTextProfiles.CanonicalPath(game);}catch(Exception ex){InvalidatePreparation();RefreshControls();SetStatus("Проверьте папку игры",ex.Message,accent);return;}
   if(!File.Exists(Path.Combine(home,"Engine.ps1"))||!File.Exists(Path.Combine(home,"manifest.json"))){SetStatus("Распакуйте весь архив","Рядом с Launcher.exe должны находиться Engine.ps1, manifest.json и папка payload.",accent);return;}
   busy=true;RefreshControls();SetStatus(action=="prepare"?"Проверяем файлы…":action=="install"?"Устанавливаем перевод…":"Восстанавливаем оригинал…","Дождитесь завершения. Идёт проверка файлов.",accent);
   ThreadPool.QueueUserWorkItem(delegate{
    int code=-1;string output;
    try{var si=new ProcessStartInfo("powershell.exe","-NoProfile -ExecutionPolicy Bypass -File \""+Path.Combine(home,"Engine.ps1")+"\" -Action "+action+" -Translation "+variant+" -GamePath \""+game.TrimEnd('\\')+"\""){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true,StandardOutputEncoding=Encoding.UTF8,StandardErrorEncoding=Encoding.UTF8};using(var p=Process.Start(si)){var err=p.StandardError.ReadToEndAsync();output=p.StandardOutput.ReadToEnd();p.WaitForExit();output+=err.Result;code=p.ExitCode;}}
    catch(Exception ex){output=ex.Message;}
-   if(!IsDisposed)BeginInvoke((Action)delegate{ApplyResult(action,code,output);});
+   if(!IsDisposed)BeginInvoke((Action)delegate{ApplyResult(action,code,output,game,variant);});
   });
  }
 
+ const string CurrentProfileLine="PROFILE game=1.26 records=56134 text=0.15.5 channel=stable";
  static bool ContainsText(Control parent,string text){if(parent.Text.Contains(text))return true;foreach(Control child in parent.Controls)if(ContainsText(child,text))return true;return false;}
  int checks=0;void Check(bool value,string message){if(!value)throw new Exception(message);checks++;}
  void SelfTest(){
   Check(IsContact(TelegramUrl)&&IsContact(SteamUrl)&&IsContact(MailUrl)&&IsContact(GuideUrl)&&IsContact(TextUpdate.Repository)&&!IsContact("https://example.com"),"contact destinations");
-  Check(Text.Contains("0.28")&&TextUpdate.LauncherVersion=="0.28","launcher version");
+  Check(Text.Contains("0.29")&&TextUpdate.LauncherVersion=="0.29","launcher version");
   Check(ContainsText(this,"Японский также поддерживается, но не обязателен.")&&!ContainsText(this,"Японский нужен для шрифта"),"optional Japanese base");
   Check(ContainsText(this,"Шрифт устанавливается отдельным пакетом.")&&ContainsText(this,"Будет восстановлен исходный game.dat."),"native package information");
   Check(ClientSize==new Size(960,680),"window size");foreach(Control c in Controls)Check(c.Left>=5&&c.Top>=5&&c.Right<=Width-5&&c.Bottom<=Height-5,"inside frame: "+c.Text);
@@ -271,9 +292,9 @@ sealed partial class Launcher : Form {
   string savedPath=path.Text;path.Text=eaPath;RefreshVoice();Check(voiceStatus.Text.Contains("EA app")&&voiceSteam.Text.Contains("EA app"),"EA language instructions");path.Text=savedPath;
   string testPrefs=Path.Combine(Path.GetTempPath(),"f1ru-voice-test-"+Guid.NewGuid().ToString("N"),"voice.txt");
   try{SaveVoice(testPrefs,"japanese");Check(LoadVoice(testPrefs)=="japanese","Japanese preference roundtrip");SaveVoice(testPrefs,"english");Check(LoadVoice(testPrefs)=="english","atomic preference replacement");File.WriteAllText(testPrefs,"invalid");Check(LoadVoice(testPrefs)=="","invalid preference");bool rejected=false;try{SaveVoice(testPrefs,"other");}catch(ArgumentException){rejected=true;}Check(rejected,"invalid write rejected");}finally{if(File.Exists(testPrefs))File.Delete(testPrefs);Directory.Delete(Path.GetDirectoryName(testPrefs));}
-  ready.Checked=true;ApplyResult("prepare",0,"PASS");voice.SelectedIndex=1;Check(SelectedVoice=="japanese"&&!prepared&&!ready.Checked&&!install.Enabled,"voice change invalidates readiness");Check(voiceSummary.Text.Contains("Японская"),"Japanese summary");voice.SelectedIndex=0;Check(voiceSummary.Text.Contains("Английская"),"English summary");
+  ready.Checked=true;ApplyResult("prepare",0,CurrentProfileLine);voice.SelectedIndex=1;Check(SelectedVoice=="japanese"&&!prepared&&!ready.Checked&&!install.Enabled,"voice change invalidates readiness");Check(voiceSummary.Text.Contains("Японская"),"Japanese summary");voice.SelectedIndex=0;Check(voiceSummary.Text.Contains("Английская"),"English summary");
   Check(translation.Items.Count==2&&SelectedTranslation==TranslationVariants.Russian,"translation default");
-  ready.Checked=true;ApplyResult("prepare",0,"PASS");translation.SelectedIndex=1;
+  ready.Checked=true;ApplyResult("prepare",0,CurrentProfileLine);translation.SelectedIndex=1;
   Check(SelectedTranslation==TranslationVariants.OriginalNames&&!prepared&&!ready.Checked&&!install.Enabled,"variant change invalidates readiness");
   Check(SelectedVoice=="english"&&translationHint.Text.Contains("Пилоты"),"variant independent from voice");
   Check(!checkUpdate.Enabled&&!applyUpdate.Enabled&&!installUpdate.Enabled,"standard updater does not replace original names");
@@ -284,16 +305,36 @@ sealed partial class Launcher : Form {
   File.WriteAllText(prefs,"unknown");Check(TranslationVariants.Load(prefs)==TranslationVariants.Russian,"invalid variant falls back");
   bool invalid=false;try{TranslationVariants.Save(prefs,"../bad");}catch(ArgumentException){invalid=true;}Check(invalid,"invalid variant rejected");File.Delete(prefs);
   busy=true;RefreshControls();Check(!translation.Enabled,"variant frozen while busy");busy=false;
-  translation.SelectedIndex=0;Check(checkUpdate.Enabled&&SelectedVoice=="english","standard update restored");
-  Check(!install.Enabled,"initial gate");ready.Checked=true;Check(!install.Enabled,"checkbox alone");ApplyResult("prepare",0,"PASS");Check(install.Enabled,"prepared");path.Text+="_test";Check(!prepared&&!install.Enabled,"path invalidation");busy=true;RefreshControls();Check(!checkUpdate.Enabled&&!applyUpdate.Enabled&&!prepare.Enabled&&!restore.Enabled&&!path.Enabled&&!voice.Enabled&&!voiceSteam.Enabled&&!voiceRefresh.Enabled,"busy");var closing=new FormClosingEventArgs(CloseReason.UserClosing,false);OnFormClosing(closing);Check(closing.Cancel,"busy close");
-  ApplyResult("install",1,"ОШИБКА: Тест");Check(!prepared&&!install.Enabled,"failed install");ApplyResult("prepare",0,"PASS");ApplyResult("install",0,"PASS");Check(statusTitle.Text=="Перевод установлен","installed");ApplyResult("restore",0,"PASS");Check(!install.Enabled&&statusTitle.Text=="Оригинал восстановлен","restored");
+  translation.SelectedIndex=0;Check(!checkUpdate.Enabled&&SelectedVoice=="english","standard update awaits recheck");
+  Check(!install.Enabled,"initial gate");ready.Checked=true;Check(!install.Enabled,"checkbox alone");ApplyResult("prepare",0,CurrentProfileLine);Check(install.Enabled,"prepared");path.Text+="_test";Check(!prepared&&!install.Enabled,"path invalidation");busy=true;RefreshControls();Check(!checkUpdate.Enabled&&!applyUpdate.Enabled&&!prepare.Enabled&&!restore.Enabled&&!path.Enabled&&!voice.Enabled&&!voiceSteam.Enabled&&!voiceRefresh.Enabled,"busy");var closing=new FormClosingEventArgs(CloseReason.UserClosing,false);OnFormClosing(closing);Check(closing.Cancel,"busy close");
+  ApplyResult("install",1,"ОШИБКА: Тест");Check(!prepared&&!install.Enabled,"failed install");ApplyResult("prepare",0,CurrentProfileLine);ApplyResult("install",0,CurrentProfileLine);Check(statusTitle.Text=="Перевод установлен","installed");ApplyResult("restore",0,"PASS");Check(!install.Enabled&&statusTitle.Text=="Оригинал восстановлен","restored");
+  Check(detectedProfile==null&&!checkUpdate.Enabled&&!installUpdate.Enabled,"unknown profile updater gate");
+  ready.Checked=true;ApplyResult("prepare",0,"PROFILE game=1.18 records=56439 text=0.15.5.118 channel=pinned");
+  Check(prepared&&install.Enabled&&detectedProfile.GameVersion=="1.18","1.18 preparation");
+  Check(packageVersion.Text.Contains("1.18")&&packageVersion.Text.Contains("0.15.5.118"),"1.18 exact displayed version");
+  Check(!checkUpdate.Enabled&&!applyUpdate.Enabled&&!installUpdate.Enabled&&updateMessage.Text.Contains("полным"),"1.18 pinned UI update gate");Check(downloadRelease.Enabled&&IsContact(TextUpdate.Repository+"/releases"),"legacy full archive link available");
+  ApplyResult("prepare",0,"PROFILE game=1.24 records=55991 text=0.15.5.124 channel=pinned");
+  Check(prepared&&install.Enabled&&packageVersion.Text.Contains("0.15.5.124")&&!checkUpdate.Enabled,"1.24 preparation and pinning");
+  ApplyResult("prepare",0,CurrentProfileLine);candidate=new TextUpdate{Available=true};RefreshControls();
+  Check(checkUpdate.Enabled&&applyUpdate.Enabled&&installUpdate.Enabled,"current profile stable UI regression");
+  path.Text+="_different";Check(detectedProfile==null&&candidate==null&&!prepared&&!applyUpdate.Enabled,"path clears profile and candidate");
+  ApplyResult("prepare",0,CurrentProfileLine);candidate=new TextUpdate{Available=true};translation.SelectedIndex=1;
+  Check(detectedProfile==null&&candidate==null&&!prepared&&!install.Enabled,"variant clears profile and candidate");
+  ApplyResult("prepare",0,"PROFILE game=1.26 records=56134 text=0.15.5.1 channel=stable");
+  Check(packageVersion.Text.Contains("0.15.5.1")&&!checkUpdate.Enabled,"original-names exact displayed text version");
+  translation.SelectedIndex=0;ApplyResult("prepare",0,"PREPARE PASS");Check(!prepared&&detectedProfile==null,"missing structured profile rejected");
+  ApplyResult("prepare",0,"PROFILE game=1.18 records=56134 text=0.15.5.118 channel=pinned");Check(!prepared&&detectedProfile==null,"mismatched profile count rejected");
+  ApplyResult("prepare",0,CurrentProfileLine+"\r\n"+CurrentProfileLine);Check(!prepared,"duplicate profile rejected");
+  ApplyResult("prepare",0,CurrentProfileLine);ApplyResult("install",1,CurrentProfileLine+"\r\nОШИБКА: fixture");Check(detectedProfile==null&&!prepared,"failed operation cannot retain profile");
+  ApplyResult("prepare",0,CurrentProfileLine,path.Text+"_old",SelectedTranslation);Check(detectedProfile==null&&!prepared,"stale path result rejected");
+  string validPath=path.Text;path.Text=@"C:\bad|path";ApplyResult("prepare",1,"Invalid fixture path",path.Text,SelectedTranslation);Check(detectedProfile==null&&!prepared&&statusTitle.Text=="Операция не завершена","invalid path result does not crash UI");path.Text=validPath;
   using(var bmp=new Bitmap(Width,Height)){DrawToBitmap(bmp,ClientRectangle);foreach(Point pt in new[]{new Point(60,0),new Point(60,1),new Point(0,60),new Point(1,60),new Point(Width-1,60),new Point(60,Height-1)})Check(bmp.GetPixel(pt.X,pt.Y).R<8,"black outer edge");}
  }
  [STAThread]static int Main(string[] args){Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);bool first;using(var mutex=new Mutex(true,"Local\\Karsvein-F1RU-021",out first)){
   if(!first&&args.Length==0){MessageBox.Show("Лаунчер уже открыт.","F1 25");return 1;}
   using(var f=new Launcher(args.Length>0)){
    if(args.Length==2&&args[0]=="--self-test"){try{f.SelfTest();File.WriteAllText(args[1],"UI_TEST_PASS checks="+f.checks+" real_game_writes=false",Encoding.UTF8);return 0;}catch(Exception ex){File.WriteAllText(args[1],ex.ToString());return 1;}}
-   if(args.Length>=2&&args[0]=="--preview"){f.ShowInTaskbar=false;f.StartPosition=FormStartPosition.Manual;f.Location=new Point(-30000,-30000);f.Show();Application.DoEvents();if(args.Length==3){if(args[2]=="original-names"){f.translation.SelectedIndex=1;f.ShowPage("install");}else if(f.pages.ContainsKey(args[2]))f.ShowPage(args[2]);else if(args[2]=="voice-japanese"){f.voice.SelectedIndex=1;f.ShowPage("voice");}else{f.ready.Checked=true;f.ApplyResult("prepare",0,"PREPARE PASS");if(args[2]=="installed")f.ApplyResult("install",0,"INSTALL PASS");if(args[2]=="restored")f.ApplyResult("restore",0,"RESTORE PASS");if(args[2]=="error")f.ApplyResult("install",1,"ОШИБКА: Сначала закройте F1 25.");}}using(var b=new Bitmap(f.Width,f.Height)){f.DrawToBitmap(b,f.ClientRectangle);b.Save(args[1]);}return 0;}
+   if(args.Length>=2&&args[0]=="--preview"){f.ShowInTaskbar=false;f.StartPosition=FormStartPosition.Manual;f.Location=new Point(-30000,-30000);f.Show();Application.DoEvents();if(args.Length==3){if(args[2]=="legacy118"||args[2]=="legacy124"){f.ready.Checked=true;f.ApplyResult("prepare",0,args[2]=="legacy118"?"PROFILE game=1.18 records=56439 text=0.15.5.118 channel=pinned":"PROFILE game=1.24 records=55991 text=0.15.5.124 channel=pinned");f.ShowPage("updates");}else if(args[2]=="original-names"){f.translation.SelectedIndex=1;f.ShowPage("install");}else if(f.pages.ContainsKey(args[2]))f.ShowPage(args[2]);else if(args[2]=="voice-japanese"){f.voice.SelectedIndex=1;f.ShowPage("voice");}else{f.ready.Checked=true;f.ApplyResult("prepare",0,CurrentProfileLine);if(args[2]=="installed")f.ApplyResult("install",0,CurrentProfileLine);if(args[2]=="restored")f.ApplyResult("restore",0,"RESTORE PASS");if(args[2]=="error")f.ApplyResult("install",1,"ОШИБКА: Сначала закройте F1 25.");}}using(var b=new Bitmap(f.Width,f.Height)){f.DrawToBitmap(b,f.ClientRectangle);b.Save(args[1]);}return 0;}
    Application.Run(f);return 0;
   }
  }}

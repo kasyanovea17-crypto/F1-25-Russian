@@ -130,30 +130,53 @@ try{
  if($TestMode -and !$root.StartsWith(([IO.Path]::GetFullPath($PSScriptRoot)+'\test-game'),[StringComparison]::OrdinalIgnoreCase)){throw 'Тестовый режим разрешён только для изолированной тестовой папки лаунчера.'}
  if((Get-Item -LiteralPath $root -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Выберите реальную папку игры, не ссылку.'}
  $m=Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'manifest.json')|ConvertFrom-Json
- # Both known variants are accepted during migration and journal recovery.
- $languageHash=$m.lng;$languagePayload='language.lng'
- $allowedLanguageHashes=@($m.lng)+@($m.previous_lng)
- if($m.translation_variants){foreach($variant in $m.translation_variants.PSObject.Properties){
-  if($variant.Name -notin @('russian','original_names')){throw 'Неизвестный вариант перевода.'}
-  if($variant.Value.sha256 -notmatch '^[0-9a-f]{64}$'){throw 'Повреждена сумма варианта перевода.'}
-  $allowedLanguageHashes+=@($variant.Value.sha256)+@($variant.Value.previous_sha256)
- }}
- if($Translation -eq 'original_names'){
-  $variant=$m.translation_variants.original_names
-  if(!$variant -or $variant.payload -cne 'language-original-names.lng' -or $variant.sha256 -notmatch '^[0-9a-f]{64}$' -or $variant.records -ne 56134){throw 'В архиве отсутствует вариант с оригинальными именами.'}
-  $languageHash=$variant.sha256;$languagePayload=$variant.payload
-  if($m.payload.($languagePayload) -cne $languageHash){throw 'Описание варианта перевода не совпадает с комплектом.'}
- }
  $exeHash=Hash (Inside 'F1_25.exe')
  $profiles=@($m.native_profiles|Where-Object {$_.exe_sha256 -eq $exeHash})
  if($profiles.Count -eq 0){
-  $profiles=@($m.native_profiles|Where-Object { $_.micro_compatibility -and (ValidPublisher (Inside 'F1_25.exe') $_.micro_compatibility.publisher_organization) -and (HeaderCompatible $_ (Inside 'F1_25.exe')) })
+  $profiles=@($m.native_profiles|Where-Object { !$_.language_set -and $_.micro_compatibility -and (ValidPublisher (Inside 'F1_25.exe') $_.micro_compatibility.publisher_organization) -and (HeaderCompatible $_ (Inside 'F1_25.exe')) })
   if($profiles.Count -eq 1){Write-Output 'COMPATIBILITY PASS; подпись EA действительна, индекс игровых ресурсов не изменён.'}
  }
  if($profiles.Count -ne 1){throw 'Структура игровых ресурсов изменилась. Нужен новый профиль совместимости, файлы сохранены.'}
  $profile=$profiles[0]
  AssertClosed
  ResolveMicroArchive
+ # Resolve text only after the game's EXE and DAT have selected one resource
+ # profile. Hash history, variant switching and transaction recovery are scoped
+ # to that profile's language set; 1.18/1.24/1.26 text is never interchangeable.
+ $selectedSet=$m;$gameVersion='1.26';$textChannel='stable'
+ $languageRecords=56134;if($m.language_records){$languageRecords=[int]$m.language_records}
+ if($languageRecords -ne 56134){throw 'Неверный набор строк текущего канала перевода.'}
+ $languageVersion=[string]$m.text_version
+ $russianPayload='language.lng';$namesPayload='language-original-names.lng'
+ if($profile.language_set){
+  $setId=[string]$profile.language_set
+  if($setId -notin @('1.18','1.24') -or $profile.game_version -cne $setId -or $profile.micro_compatibility){throw 'Неверный версионный профиль перевода.'}
+  $selectedSet=$m.language_sets.($setId)
+  $expectedRecords=@{'1.18'=56439;'1.24'=55991}
+  if(!$selectedSet -or [int]$selectedSet.records -ne $expectedRecords[$setId]){throw 'Неверный набор строк версионного перевода.'}
+  $russianPayload='language-'+$setId+'.lng';$namesPayload='language-'+$setId+'-original-names.lng'
+  if($selectedSet.payload -cne $russianPayload){throw 'Неверный маршрут версионного перевода.'}
+  $gameVersion=$setId;$textChannel='pinned';$languageRecords=[int]$selectedSet.records;$languageVersion=[string]$selectedSet.version
+ }elseif($profile.game_version -and $profile.game_version -cne '1.26'){throw 'Профиль игры не связан с набором текста.'}
+ if($selectedSet.lng -notmatch '^[0-9a-f]{64}$'){throw 'Повреждена сумма основного перевода.'}
+ $languageHash=[string]$selectedSet.lng;$languagePayload=$russianPayload
+ $allowedLanguageHashes=@($selectedSet.lng)+@($selectedSet.previous_lng)
+ if($selectedSet.translation_variants){foreach($variant in $selectedSet.translation_variants.PSObject.Properties){
+  if($variant.Name -notin @('russian','original_names')){throw 'Неизвестный вариант перевода.'}
+  if($variant.Value.sha256 -notmatch '^[0-9a-f]{64}$'){throw 'Повреждена сумма варианта перевода.'}
+  $allowedLanguageHashes+=@($variant.Value.sha256)+@($variant.Value.previous_sha256)
+ }}
+ foreach($hash in $allowedLanguageHashes){if($null -ne $hash -and $hash -notmatch '^[0-9a-f]{64}$'){throw 'Некорректная история контрольных сумм набора текста.'}}
+ if($Translation -eq 'original_names'){
+  $variant=$selectedSet.translation_variants.original_names
+  if(!$variant -or $variant.payload -cne $namesPayload -or $variant.sha256 -notmatch '^[0-9a-f]{64}$' -or [int]$variant.records -ne $languageRecords){throw 'В архиве отсутствует вариант с оригинальными именами для этой версии игры.'}
+  $languageHash=[string]$variant.sha256;$languagePayload=[string]$variant.payload;$languageVersion=[string]$variant.version
+ }
+ if($m.payload.($languagePayload) -cne $languageHash){throw 'Описание варианта перевода не совпадает с комплектом.'}
+ $languageTargets=@($profile.install_files|Where-Object {$_.payload -eq 'language.lng'})
+ if($languageTargets.Count -ne 2){throw 'Неверное число файлов текста в профиле.'}
+ foreach($target in $languageTargets){if($target.sha256 -cne $selectedSet.lng){throw 'Профиль ресурсов ссылается на другой набор перевода.'}}
+ if($languageVersion -notmatch '^\d+(?:\.\d+){1,3}$'){throw 'Неверная версия набора текста.'}
  if($profile.backup_dir -notmatch '^(\.f1ru-v24-build[0-9]+|\.f1ru-v25-[a-f0-9]{64})$'){throw 'Неверный профиль резервной копии.'}
  AssertClosed
  $backup=Inside $profile.backup_dir;$statePath=Inside ($profile.backup_dir+'\state.json');$pendingPath=Inside ($profile.backup_dir+'\pending.json')
@@ -166,6 +189,10 @@ try{
   if($p.Name -eq 'F1_25.exe' -and !(HeaderCompatible $profile (Inside $p.Name))){throw 'Индекс игровых ресурсов изменён.'}
   Write-Output ('COMPATIBILITY PASS; обновлённый подписанный файл сохранён: '+$p.Name)
  };$protected[$p.Name]=$h}
+ # Inventory only: optional components retain their original presence and bytes.
+ # Current Steam/EA profile guards above remain unchanged and mandatory.
+ $observed=@{}
+ foreach($name in @('EAAntiCheat.GameServiceLauncher.exe','EAAntiCheat.cfg')){$observed[$name]=CurrentHash (Inside $name)}
  $dat=Inside 'game.dat';$dh=Hash $dat
  if($dh -notin @($profile.dat_original,$profile.dat_installed)+@($profile.accepted_dat)){throw 'Состояние game.dat не распознано. Файл сохранён без изменений.'}
  $original=Inside ($profile.backup_dir+'\game.dat')
@@ -191,6 +218,7 @@ try{
   if(Test-Path -LiteralPath $p){$h=Hash $p;if($h -notin $allowed){throw ('Файл изменён другим инструментом: '+$file.target)}}
  }
  if($Action -ne 'restore'){foreach($p in $m.payload.PSObject.Properties){if((Hash (Payload $p.Name)) -ne $p.Value){throw ('Комплект повреждён: '+$p.Name)}}}
+ Write-Output ('PROFILE game='+$gameVersion+' records='+$languageRecords+' text='+$languageVersion+' channel='+$textChannel)
  if($Action -eq 'prepare'){Write-Output ('TRANSLATION '+$Translation+'; SHA256 '+$languageHash);Write-Output 'PREPARE PASS; комплект и сборка совместимы. Отдельные русские шрифты; исходные шрифты, EXE и античит сохраняются.';exit 0}
  $txnName='.f1ru-transaction-'+[guid]::NewGuid().ToString('N');$txn=Inside $txnName;[IO.Directory]::CreateDirectory($txn)|Out-Null
  # Recover exact stock only from known complete input hashes and locally packaged patch bytes.
@@ -209,7 +237,7 @@ try{
  if((Hash $dat) -ne $dh){throw 'Игра обновилась во время подготовки. Повторите проверку.'}
  foreach($name in $stockHashes.Keys){if((Hash (Inside $name)) -ne $stockHashes[$name]){throw 'Исходные ресурсы изменились во время подготовки.'}}
  $nextState=Join-Path $txn 'state-next.json'
- SaveJson $nextState @{schema=24;root=$root;status=$Action;version=$m.version;steam_build=$profile.steam_build;online_verified=$false;audio_files_changed=$false;translation_variant=$Translation;language_sha256=$languageHash}
+ SaveJson $nextState @{schema=24;root=$root;status=$Action;version=$m.version;steam_build=$profile.steam_build;online_verified=$false;audio_files_changed=$false;translation_variant=$Translation;language_sha256=$languageHash;game_version=$gameVersion;language_records=$languageRecords;text_version=$languageVersion;update_channel=$textChannel}
  $entries=@();$committed=$false
  foreach($name in @(TargetNames)){
   $p=Inside $name;$before=CurrentHash $p;$exists=$null -ne $before;$saved=Join-Path $txn ('snapshot-'+$entries.Count)
@@ -239,6 +267,7 @@ try{
   if((Hash $dat) -ne $expected){throw 'Архив после записи не прошёл проверку.'}
   foreach($file in $profile.install_files){$p=Inside $file.target;$fileHash=$file.sha256;if($file.payload -eq 'language.lng'){$fileHash=$languageHash};if($Action -eq 'install'){if((Hash $p) -ne $fileHash){throw 'Ресурс после записи не прошёл проверку.'}}elseif(Test-Path -LiteralPath $p){throw 'Добавленный ресурс остался после восстановления.'}}
   foreach($name in $protected.Keys){if((Hash (Inside $name)) -ne $protected[$name]){throw 'Состояние исполняемых файлов изменилось во время операции.'}}
+  foreach($name in $observed.Keys){if((CurrentHash (Inside $name)) -ne $observed[$name]){throw 'Посторонний компонент изменился во время операции.'}}
   Put $nextState $statePath
   foreach($e in $checked.entries){if((CurrentHash (Inside $e.target)) -ne $e.after){throw 'Финальное состояние операции не прошло проверку.'}}
   [IO.File]::Delete($pendingPath);$committed=$true
