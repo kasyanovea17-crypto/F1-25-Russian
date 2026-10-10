@@ -1,0 +1,37 @@
+name: Publish launcher v0.30
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-v0.30.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-launcher-v0.30
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.repository == 'kasyanovea17-crypto/F1-25-Russian' && github.ref == 'refs/heads/main'
+    runs-on: windows-2022
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build and verify archive, profile gate and updater
+        run: python scripts/release_ci.py
+      - name: Prepare release assets
+        run: python scripts/publish_release.py
+      - name: Publish verified v0.30 assets
+        run: python scripts/publish_release.py --publish
+        env:
+          GH_TOKEN: ${{ github.token }}

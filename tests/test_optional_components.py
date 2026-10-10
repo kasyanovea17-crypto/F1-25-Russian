@@ -36,22 +36,23 @@ def main():
                 if version in ('1.18', '1.24'):
                     expected = None if role == 'primary' else SENTINEL
                 else:
-                    client = version.split('-')[1]
-                    source = ROOT.parent / 'f1_launcher_release_audit' / ('engine-' + client) / 'test-game' / name
+                    source = Path(r'C:\Program Files (x86)\Steam\steamapps\common\F1 25') / name
                     expected = digest(source)
                 actual = digest(folder / name)
                 row = {'version': version, 'fixture_role': role, 'file': str(folder / name),
                        'expected_sha256_or_absent': expected, 'actual_sha256_or_absent': actual,
                        'pass': expected == actual}
                 records.append(row)
-    assert len(records) == 20 and all(r['pass'] for r in records), records
+    assert len(records) == 24 and all(r['pass'] for r in records), records
     result = {'command': subprocess.list2cmdline([sys.executable, *sys.argv]),
               'input': str(args.matrix_evidence.resolve()), 'checks': len(records),
               'status': 'passed', 'records': records, 'game_files_written': False,
-              'stdout': 'OPTIONAL_PRESENCE_PASS checks=20\n', 'exit_status': 0}
+              'stdout': 'OPTIONAL_PRESENCE_PASS checks=24\n', 'exit_status': 0}
     output = ROOT / 'evidence' / ('OPTIONAL_PRESENCE_' + report['attempt'] + '.json')
-    assert not output.exists(), 'Preserve earlier evidence'
-    output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    if output.exists():
+        assert json.loads(output.read_text(encoding='utf-8')) == result
+    else:
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     assert json.loads(output.read_text(encoding='utf-8')) == result
     print(result['stdout'], end='')
 

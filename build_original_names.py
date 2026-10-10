@@ -98,9 +98,11 @@ assert LNG(out).values==values
 file=ROOT/'payload/language-original-names.lng';file.write_bytes(out)
 hash=hashlib.sha256(out).hexdigest()
 m=read(ROOT/'manifest.base.json');m['payload'][file.name]=hash
-m['translation_variants']={'original_names':{'payload':file.name,'sha256':hash,'version':channel['version']+'.1','base_text_version':channel['version'],'records':len(values),'changed':len(changes),'previous_sha256':[]}}
+previous=m.get('translation_variants',{}).get('original_names',{})
+history=list(dict.fromkeys(previous.get('previous_sha256',[])+([previous['sha256']] if previous.get('sha256') and previous['sha256']!=hash else [])))
+m['translation_variants']={'original_names':{'payload':file.name,'sha256':hash,'version':channel['version']+'.1','base_text_version':channel['version'],'records':len(values),'changed':len(changes),'previous_sha256':history}}
 (ROOT/'manifest.base.json').write_text(json.dumps(m,ensure_ascii=False,indent=2),encoding='utf-8')
-audit=ROOT.parent/'f1_launcher_release_audit'
+audit=ROOT/'evidence'
 audit.mkdir(parents=True,exist_ok=True)
 (audit/'translation_diff.json').write_text(json.dumps(changes,ensure_ascii=False,indent=2),encoding='utf-8')
 (audit/'translation_build.json').write_text(json.dumps({'entries':len(values),'changed':len(changes),'base_sha256':channel['sha256'],'alternative_sha256':hash,'standard_unchanged':True},indent=2),encoding='utf-8')

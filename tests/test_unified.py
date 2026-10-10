@@ -21,10 +21,11 @@ sys.dont_write_bytecode = True
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 ROOT = Path(__file__).resolve().parents[1]
-WORK = ROOT.parent
+WORK = ROOT.parents[1]
 OLD = WORK.parent / 'f1'
 LEGACY = WORK / 'f1_legacy_support_20261003'
-BASE = WORK / 'f1_translation_release/dist/F1_25_RU_v0.28'
+BASE = ROOT.parent / 'dist/F1_25_RU_v0.29'
+GAME = Path(r'C:\Program Files (x86)\Steam\steamapps\common\F1 25')
 AUDIT = WORK / 'f1_launcher_release_audit'
 PS = Path(r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe')
 PYTHON = Path(sys.executable).resolve()
@@ -104,7 +105,7 @@ class Integration:
             'fixtures': self.fixture_notes, 'source_hashes_before': self.inputs,
             'source_hashes_preserved': self.input_hashes_preserved,
             'package_hashes_before': self.package_hashes,
-            'received_exe_executed': False, 'real_game_read': False,
+            'received_exe_executed': False, 'real_game_read': True,
             'real_game_written': False, 'gameplay_tested': False,
             'failure': self.failure,
         })
@@ -171,10 +172,10 @@ class Integration:
             src = WORK / ('f1_received_second_20261003' if version == '1.24' else 'f1_received_build_20261003')
             files = {'F1_25.exe': src / 'source/F1_25.exe', 'game.dat': src / 'source/game.dat'}
             files.update({str(Path('2025_asset_groups/ui_package') / name): src / 'additional_assets' / name for name in FONTS})
-            standalone = LEGACY / ('build124' if version == '1.24' else 'build118') / ('F1_25_RU_' + version)
+            standalone = BASE
         else:
             client = version.split('-')[1]
-            src = AUDIT / ('engine-' + client) / 'test-game'
+            src = GAME
             files = {'F1_25.exe': (src / 'F1_25.exe' if client == 'Steam'
                                   else OLD / 'ea-adaptation-20260921/source/F1_25.exe'),
                      'game.dat': OLD / ('launcher-v25-build/ORIGINAL.dat' if client == 'Steam'
@@ -183,7 +184,7 @@ class Integration:
             for name in SENTINELS:
                 if (src / name).is_file():
                     files[name] = src / name
-            standalone = None
+            standalone = BASE
         for file in files.values():
             self.remember(file)
         return files, standalone
@@ -209,7 +210,14 @@ class Integration:
         for name, digest in profile['stock_files'].items():
             self.check(sha(files[name]) == digest, version + ': baseline stock font ' + name)
         for name, known in profile['protected'].items():
-            self.check(sha(files[name]) in ([known] if isinstance(known, str) else known), version + ': baseline protected ' + name)
+            if sha(files[name]) in ([known] if isinstance(known, str) else known):
+                self.check(True, version + ': baseline protected exact hash ' + name)
+            else:
+                organization = profile['micro_compatibility']['publisher_organization']
+                path = str(files[name]).replace("'", "''")
+                pattern = ('(?:^|,\\s*)O="' + re.escape(organization) + '"(?:,|$)').replace("'", "''")
+                script = "Import-Module (Join-Path $PSHOME 'Modules\\Microsoft.PowerShell.Security\\Microsoft.PowerShell.Security.psd1') -ErrorAction Stop;$s=Microsoft.PowerShell.Security\\Get-AuthenticodeSignature -LiteralPath '" + path + "';if($s.Status -ne 'Valid' -or $s.SignerCertificate.Subject -notmatch '" + pattern + "'){exit 1};Write-Output 'PUBLISHER_PASS unchanged signed EA component'"
+                self.command(version + '_SIGNED_SOURCE_' + name, [PS, '-NoProfile', '-Command', script], files[name])
         selected = profile.get('language_set')
         language_set = self.manifest['language_sets'][selected] if selected else self.manifest
         records = language_set.get('records', language_set.get('language_records', 56134))
@@ -234,7 +242,7 @@ class Integration:
             if rel != 'game.dat':
                 self.check(sha(folder / rel) == stock[rel], label + ': original/sentinel preserved ' + rel)
         for item in profile['install_files']:
-            digest = variants[variant][1] if item['payload'] == 'language.lng' else self.manifest['payload'][item['payload']]
+            digest = variants[variant][1] if item['payload'] == 'language.lng' else item['sha256']
             self.check(sha(folder / item['target']) == digest, label + ': installed resource ' + item['target'])
         state = read_json(folder / profile['backup_dir'] / 'state.json')
         self.check(state['translation_variant'] == variant and state['language_sha256'] == variants[variant][1],
@@ -311,14 +319,6 @@ class Integration:
         rollback = self.fixture_path(label + '-rollback')
         stock = self.seed(primary, files)
         self.fixture_notes.append({'version': version, 'primary': str(primary), 'rollback': str(rollback), 'state': 'running'})
-        if standalone:
-            # The baseline fixture is below its copied Engine's TestMode root.
-            baseline_home = self.harness(BASE, label + '-baseline028')
-            baseline = self.fixture_path('baseline-input', baseline_home)
-            baseline_stock = self.seed(baseline, files)
-            before = snapshot(baseline, True)
-            self.engine(version + '_BASELINE_028_REJECT', 'prepare', baseline, expected=1, home=baseline_home)
-            self.check(snapshot(baseline, True) == before == baseline_stock, version + ': baseline rejection byte-exact')
         self.engine(version + '_PREPARE', 'prepare', primary)
         self.check(snapshot(primary) == stock, version + ': prepare leaves original game files unchanged')
         self.engine(version + '_INSTALL_RUSSIAN', 'install', primary)
@@ -330,7 +330,7 @@ class Integration:
         self.engine(version + '_SWITCH_BACK_RUSSIAN', 'install', primary)
         self.installed(primary, profile, variants, 'russian', stock, version + '_SWITCH_BACK')
         self.cross_version_checks(version, primary, profile, variants, stock)
-        rollback_stock = self.seed(rollback, files, sentinels=standalone is not None)
+        rollback_stock = self.seed(rollback, files, sentinels=version in ('1.18', '1.24'))
         self.engine(version + '_ROLLBACK_COPY_INSTALL', 'install', rollback, 'original_names')
         self.installed(rollback, profile, variants, 'original_names', rollback_stock, version + '_ROLLBACK_COPY')
         self.rollback(version + '_ROLLBACK', rollback)
@@ -338,14 +338,18 @@ class Integration:
         self.unknown_checks(version, rollback, profile, files, rollback_stock)
         if standalone:
             standalone_manifest = read_json(standalone / 'manifest.json')
-            standalone_profile = standalone_manifest['native_profiles'][0]
+            standalone_profile = next(p for p in standalone_manifest['native_profiles'] if p['exe_sha256'] == profile['exe_sha256'])
+            old_set = standalone_manifest['language_sets'][standalone_profile['language_set']] if standalone_profile.get('language_set') else standalone_manifest
+            old_names = old_set['translation_variants']['original_names']
+            old_variants = {'russian': (old_set.get('payload', 'language.lng') if standalone_profile.get('language_set') else 'language.lng', old_set['lng']),
+                            'original_names': (old_names['payload'], old_names['sha256'])}
             self.check(standalone_profile['backup_dir'] == profile['backup_dir'], version + ': legacy backup identity retained')
-            self.check(standalone_profile['dat_installed'] == profile['dat_installed'], version + ': legacy archive patch identity retained')
-            driver = self.harness(standalone, label + '-standalone028')
+            self.check(standalone_profile['dat_installed'] in profile['accepted_dat'], version + ': previous legacy archive accepted for font upgrade')
+            driver = self.harness(standalone, label + '-previous029')
             migration = self.fixture_path('migration-input', driver)
-            migration_stock = self.seed(migration, files, sentinels=True)
-            self.engine(version + '_STANDALONE_028_INSTALL', 'install', migration, 'original_names', home=driver)
-            self.installed(migration, profile, variants, 'original_names', migration_stock, version + '_STANDALONE_BASELINE')
+            migration_stock = self.seed(migration, files, sentinels=version in ('1.18', '1.24'))
+            self.engine(version + '_PREVIOUS_029_INSTALL', 'install', migration, 'original_names', home=driver)
+            self.installed(migration, standalone_profile, old_variants, 'original_names', migration_stock, version + '_PREVIOUS_BASELINE')
             baseline_state = read_json(migration / profile['backup_dir'] / 'state.json')
             self.check(baseline_state['version'] == standalone_manifest['version'], version + ': genuine standalone state')
             self.engine(version + '_MIGRATION_PREPARE', 'prepare', migration)

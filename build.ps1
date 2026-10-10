@@ -1,8 +1,12 @@
 ﻿param([switch]$SkipArchive,[switch]$PackageOnly)
 $ErrorActionPreference='Stop'
+# Explicit paths avoid inheriting PowerShell 7 module discovery when a Python
+# build runner launches Windows PowerShell 5.1.
+Import-Module (Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Utility\Microsoft.PowerShell.Utility.psd1') -ErrorAction Stop
+Import-Module (Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Management\Microsoft.PowerShell.Management.psd1') -ErrorAction Stop
 $r=$PSScriptRoot
-$out=Join-Path $r 'dist\F1_25_RU_v0.29'
-$zip=Join-Path $r 'dist\F1_25_RU_v0.29_text0.15.5.zip'
+$out=Join-Path $r 'dist\F1_25_RU_v0.30'
+$zip=Join-Path $r 'dist\F1_25_RU_v0.30_text0.15.6.zip'
 $code=@('Launcher.cs','TranslationVariants.cs','GameTextProfiles.cs','Updater.cs','Engine.ps1','Compatibility.cs','ROLLBACK.sh','Вернуть оригинал.cmd')
 $docs=@('README.txt','CHANGELOG.md','TEST_REPORT.md')
 $static=@('background.png','project-links.json','EDITORIAL_NOTES.json')
@@ -36,7 +40,7 @@ if(!$PackageOnly){
  $p=Start-Process -FilePath (Join-Path $out 'Launcher.exe') -ArgumentList ('--self-test "'+$result+'"') -WindowStyle Hidden -Wait -PassThru
  if($p.ExitCode -ne 0){Get-Content -LiteralPath $result;throw 'UI test failed'}
  Get-Content -LiteralPath $result
- Write-Output 'BUILD_PASS launcher=0.29 game_profiles=1.18,1.24,1.26'
+ Write-Output 'BUILD_PASS launcher=0.30 game_profiles=1.18,1.24,1.26'
 }
 if($SkipArchive){return}
 if(Test-Path -LiteralPath $zip){throw 'Archive already exists; delivered files are never overwritten.'}
@@ -60,6 +64,6 @@ $files+='SHA256SUMS.txt'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $stream=[IO.File]::Open($zip,'CreateNew');$archive=New-Object IO.Compression.ZipArchive($stream,[IO.Compression.ZipArchiveMode]::Create)
-try{foreach($name in $files){[IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,(Join-Path $out $name),('F1_25_RU_v0.29/'+$name.Replace('\','/')),[IO.Compression.CompressionLevel]::Optimal)|Out-Null}}finally{$archive.Dispose();$stream.Dispose()}
+try{foreach($name in $files){[IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,(Join-Path $out $name),('F1_25_RU_v0.30/'+$name.Replace('\','/')),[IO.Compression.CompressionLevel]::Optimal)|Out-Null}}finally{$archive.Dispose();$stream.Dispose()}
 Write-Output ('PACKAGE_PASS files='+$files.Count+' text='+$m.text_version)
 Get-FileHash -Algorithm SHA256 -LiteralPath $zip

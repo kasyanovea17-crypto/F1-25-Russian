@@ -60,7 +60,7 @@ sealed partial class Launcher : Form {
  [System.Runtime.InteropServices.DllImport("user32.dll")]static extern IntPtr SendMessage(IntPtr h,int m,IntPtr w,IntPtr l);
  Launcher(bool testMode){
   testing=testMode;translationPreferencePath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Karsvein","F1RU","text-variant.txt");voicePreferencePath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Karsvein","F1RU","voice-language.txt");
-  Glyphs.Load(home);Text="F1 25 · Русский текст · 0.29";ClientSize=new Size(960,680);FormBorderStyle=FormBorderStyle.None;StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;BackColor=Color.Black;ForeColor=Color.Black;Font=new Font("Segoe UI",9.5f);DoubleBuffered=true;
+  Glyphs.Load(home);Text="F1 25 · Русский текст · 0.30";ClientSize=new Size(960,680);FormBorderStyle=FormBorderStyle.None;StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;BackColor=Color.Black;ForeColor=Color.Black;Font=new Font("Segoe UI",9.5f);DoubleBuffered=true;
   if(File.Exists(Path.Combine(home,"background.png")))using(var image=Image.FromFile(Path.Combine(home,"background.png")))backdrop=new Bitmap(image);
   using(var clip=Shape.Round(ClientRectangle,36))Region=new Region(clip);
   MouseDown+=(s,e)=>{if(e.Button==MouseButtons.Left){ReleaseCapture();SendMessage(Handle,0xA1,new IntPtr(2),IntPtr.Zero);}};
@@ -91,7 +91,7 @@ sealed partial class Launcher : Form {
   LabelAt(tip,"Небольшие обновления допускаются,\nесли ресурсы перевода не изменены.\n\nНовая структура — новая проверка.\nИсходные файлы сохраняются.",20,52,234,104,9,FontStyle.Regular,muted);
   help=ButtonAt(this,"Руководство в Steam",650,533,270,38,false,0xf194);help.Click+=(s,e)=>OpenContact(GuideUrl);
   packageVersion=LabelAt(this,"",653,590,272,22,9,FontStyle.Regular,muted);
-  LabelAt(this,"Лаунчер 0.29",653,612,266,22,9,FontStyle.Bold,Color.Black);
+  LabelAt(this,"Лаунчер 0.30",653,612,266,22,9,FontStyle.Bold,Color.Black);
   LabelAt(this,"Разработано Karsvein",653,635,266,22,9,FontStyle.Regular,muted);
   BuildInstall();BuildVoice();BuildUpdates();BuildRestore();BuildHelp();BuildLog();BuildAbout();RefreshTranslation();ShowPage("install");RefreshVersions();RefreshControls();
   Activated+=(s,e)=>{if(!busy)RefreshVoice();};
@@ -273,7 +273,7 @@ sealed partial class Launcher : Form {
  int checks=0;void Check(bool value,string message){if(!value)throw new Exception(message);checks++;}
  void SelfTest(){
   Check(IsContact(TelegramUrl)&&IsContact(SteamUrl)&&IsContact(MailUrl)&&IsContact(GuideUrl)&&IsContact(TextUpdate.Repository)&&!IsContact("https://example.com"),"contact destinations");
-  Check(Text.Contains("0.29")&&TextUpdate.LauncherVersion=="0.29","launcher version");
+  Check(Text.Contains("0.30")&&TextUpdate.LauncherVersion=="0.30","launcher version");
   Check(ContainsText(this,"Японский также поддерживается, но не обязателен.")&&!ContainsText(this,"Японский нужен для шрифта"),"optional Japanese base");
   Check(ContainsText(this,"Шрифт устанавливается отдельным пакетом.")&&ContainsText(this,"Будет восстановлен исходный game.dat."),"native package information");
   Check(ClientSize==new Size(960,680),"window size");foreach(Control c in Controls)Check(c.Left>=5&&c.Top>=5&&c.Right<=Width-5&&c.Bottom<=Height-5,"inside frame: "+c.Text);
