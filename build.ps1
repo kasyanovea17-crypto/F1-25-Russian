@@ -5,9 +5,11 @@ $ErrorActionPreference='Stop'
 Import-Module (Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Utility\Microsoft.PowerShell.Utility.psd1') -ErrorAction Stop
 Import-Module (Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Management\Microsoft.PowerShell.Management.psd1') -ErrorAction Stop
 $r=$PSScriptRoot
-$out=Join-Path $r 'dist\F1_25_RU_v0.30'
-$zip=Join-Path $r 'dist\F1_25_RU_v0.30_text0.15.6.zip'
-$code=@('Launcher.cs','TranslationVariants.cs','GameTextProfiles.cs','Updater.cs','Engine.ps1','Compatibility.cs','ROLLBACK.sh','Вернуть оригинал.cmd')
+$out=Join-Path $r 'dist\F1_25_RU_v0.31'
+$zip=Join-Path $r 'dist\F1_25_RU_v0.31_package.zip'
+$code=@('Launcher.cs','SpeechUI.cs','MaxVoiceUI.cs','TranslationVariants.cs','GameTextProfiles.cs','Updater.cs','Engine.ps1','Compatibility.cs','ROLLBACK.sh','Вернуть оригинал.cmd')
+$speech=@('SpeechEngine.ps1','SpeechHost.ps1','ModelBootstrap.ps1','commands.ru.json','COMMANDS.html','README.txt','BUILD.json')
+$audio=@('MaxVoice.ps1','MaxVoiceHost.ps1','payload/max-ru-test.json','payload/max-ru-test.delta')
 $docs=@('README.txt','CHANGELOG.md','TEST_REPORT.md')
 $static=@('background.png','project-links.json','EDITORIAL_NOTES.json')
 if(!$PackageOnly){
@@ -15,6 +17,9 @@ if(!$PackageOnly){
  [IO.Directory]::CreateDirectory($out)|Out-Null
  foreach($n in $code+$docs+$static){Copy-Item -LiteralPath (Join-Path $r $n) -Destination (Join-Path $out $n)}
  Copy-Item -LiteralPath (Join-Path $r 'assets') -Destination $out -Recurse
+ [IO.Directory]::CreateDirectory((Join-Path $out 'speech'))|Out-Null
+ foreach($n in $speech){Copy-Item -LiteralPath (Join-Path $r ('speech\'+$n)) -Destination (Join-Path $out ('speech\'+$n))}
+ foreach($n in $audio){$to=Join-Path $out ('audio\'+$n);[IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($to))|Out-Null;Copy-Item -LiteralPath (Join-Path $r ('audio\'+$n)) -Destination $to}
  [IO.Directory]::CreateDirectory((Join-Path $out 'payload'))|Out-Null
  [IO.Directory]::CreateDirectory((Join-Path $out 'evidence'))|Out-Null
  $channel=Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $r 'updates\stable.json')|ConvertFrom-Json
@@ -35,12 +40,12 @@ if(!$PackageOnly){
  }
  $csc=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
  Push-Location $out
- try{& $csc /nologo /target:winexe /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll /out:Launcher.exe Launcher.cs TranslationVariants.cs GameTextProfiles.cs Updater.cs;if($LASTEXITCODE -ne 0){throw 'Build failed'}}finally{Pop-Location}
+ try{& $csc /nologo /utf8output /warn:4 /warnaserror /platform:x64 /target:winexe /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll /out:Launcher.exe Launcher.cs SpeechUI.cs MaxVoiceUI.cs TranslationVariants.cs GameTextProfiles.cs Updater.cs;if($LASTEXITCODE -ne 0){throw 'Build failed'}}finally{Pop-Location}
  $result=Join-Path $out 'UI_VERIFICATION.txt'
  $p=Start-Process -FilePath (Join-Path $out 'Launcher.exe') -ArgumentList ('--self-test "'+$result+'"') -WindowStyle Hidden -Wait -PassThru
  if($p.ExitCode -ne 0){Get-Content -LiteralPath $result;throw 'UI test failed'}
  Get-Content -LiteralPath $result
- Write-Output 'BUILD_PASS launcher=0.30 game_profiles=1.18,1.24,1.26'
+ Write-Output 'BUILD_PASS launcher=0.31 game_profiles=1.18,1.24,1.26 speech=optional max_voice=test_optional'
 }
 if($SkipArchive){return}
 if(Test-Path -LiteralPath $zip){throw 'Archive already exists; delivered files are never overwritten.'}
@@ -48,6 +53,8 @@ foreach($n in $code+$static){
  if((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $r $n)).Hash -ne (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $out $n)).Hash){throw ('Source changed after build: '+$n)}
 }
 foreach($n in $docs){Copy-Item -LiteralPath (Join-Path $r $n) -Destination (Join-Path $out $n) -Force}
+foreach($n in $speech){if((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $r ('speech\'+$n))).Hash -ne (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $out ('speech\'+$n))).Hash){throw ('Speech source changed after build: '+$n)}}
+foreach($n in $audio){if((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $r ('audio\'+$n))).Hash -ne (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $out ('audio\'+$n))).Hash){throw ('Audio source changed after build: '+$n)}}
 $m=Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $out 'manifest.json')|ConvertFrom-Json
 $files=@($code+$docs+$static+@('Launcher.exe','manifest.json','UI_VERIFICATION.txt'))
 foreach($p in $m.payload.PSObject.Properties){
@@ -56,6 +63,8 @@ foreach($p in $m.payload.PSObject.Properties){
  $files+=('payload\'+$p.Name)
 }
 $files+=@(Get-ChildItem -LiteralPath (Join-Path $out 'assets') -File -Recurse|ForEach-Object {$_.FullName.Substring($out.Length+1)})
+$files+=@($speech|ForEach-Object {'speech\'+$_})
+$files+=@($audio|ForEach-Object {'audio\'+$_.Replace('/','\')})
 $files=@($files|Sort-Object -Unique)
 $sums=@($files|ForEach-Object {(Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $out $_)).Hash.ToLowerInvariant()+'  '+$_.Replace('\','/')})
 $sums|Set-Content -LiteralPath (Join-Path $out 'SHA256SUMS.txt') -Encoding UTF8
@@ -64,6 +73,14 @@ $files+='SHA256SUMS.txt'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $stream=[IO.File]::Open($zip,'CreateNew');$archive=New-Object IO.Compression.ZipArchive($stream,[IO.Compression.ZipArchiveMode]::Create)
-try{foreach($name in $files){[IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,(Join-Path $out $name),('F1_25_RU_v0.30/'+$name.Replace('\','/')),[IO.Compression.CompressionLevel]::Optimal)|Out-Null}}finally{$archive.Dispose();$stream.Dispose()}
+try{foreach($name in $files){[IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,(Join-Path $out $name),('F1_25_RU_v0.31/'+$name.Replace('\','/')),[IO.Compression.CompressionLevel]::Optimal)|Out-Null}}finally{$archive.Dispose();$stream.Dispose()}
 Write-Output ('PACKAGE_PASS files='+$files.Count+' text='+$m.text_version)
 Get-FileHash -Algorithm SHA256 -LiteralPath $zip
+
+# The public artifact is one executable. This curated directory is an internal build input.
+$bundle=Join-Path $r 'dist\bundle-v0.31'
+if(Test-Path -LiteralPath $bundle){throw 'Bundle input exists; preserve previous builds.'}
+[IO.Directory]::CreateDirectory($bundle)|Out-Null
+foreach($name in $files){$to=Join-Path $bundle $name;[IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($to))|Out-Null;Copy-Item -LiteralPath (Join-Path $out $name) -Destination $to}
+& (Join-Path $r 'single_exe\source\Build-SingleExe.ps1') -PackageDirectory $bundle -OutputExe (Join-Path $r 'dist\F1_25_RU_v0.31.exe') -Version '0.31' -EnableTextUpdates
+if($LASTEXITCODE -ne 0){throw 'Single executable build failed'}

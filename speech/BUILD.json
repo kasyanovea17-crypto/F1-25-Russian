@@ -1,0 +1,10 @@
+{
+ "schema":1,"moduleVersion":"1.1.0","channel":"stable","launcherBase":"0.31",
+ "testedGame":"F1 25 1.26","baseLanguage":"english","optionalSetup":true,
+ "commands":37,"keywordRows":104,"visibleMenuCommands":33,
+ "contextCounts":{"Race":33,"Race_F1W":31,"Qualifying":19,"Practice":19,"Change Strategy":2},
+ "dictionaryUpdate":"owned phrase-only upgrade preserving original rollback and registry",
+ "changes":["Keyword@en","Keyword@ru","Registry64 Recognizer Attributes/Language aliases 409 and 809 during initial setup only"],
+ "gameplayAllCommandsTested":false,
+ "validation":{"backendFixtureTests":42,"nativeLanguageRequests":["409","809"],"syntheticAcousticContextTests":208,"syntheticAcousticContextPassed":208,"liveGameModificationsByTests":false,"microphoneCaptured":false}
+}
