@@ -1,0 +1,26 @@
+{
+  "game_version": "1.20.0",
+  "profile_contract": "exact EXE + original/installed DAT hashes; no micro fallback",
+  "exe_sha256": "68d69989e55c61332769784f96737f373799aec2cd0a218a72bfa59da8291642",
+  "dat_original": "53db85fd8ede5ccd0c4814a1e359865bf838bfbf5f25dab951dd00515cabe79c",
+  "dat_installed": "9953574a1fb6fc4977198e7734153e83118d3644c4eab3c624603e410b332606",
+  "records": 55991,
+  "translation_variants": [
+    "russian",
+    "original_names"
+  ],
+  "font_stock_hashes": {
+    "fonts_efigs_r_p.erp": "6fcd0415d4c1ca48b83dfd3137487844847457347bb72fed2ec421ca38c897d7",
+    "fonts_japanese.erp": "a60f5a509f2fdb22ef4e5530652ef5386a065e48f75e6eeab243d32e7dada413"
+  },
+  "resource_changes": [
+    "system/config_sku.xml",
+    "f1_2025.manifest"
+  ],
+  "patch_blocks": 11,
+  "existing_profiles_unchanged": true,
+  "source_executable_started": false,
+  "gameplay_tested": false,
+  "historical_audit_public_release": false,
+  "included_in_launcher_release": "0.32"
+}

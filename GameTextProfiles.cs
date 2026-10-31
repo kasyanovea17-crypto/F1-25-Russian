@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -19,11 +19,11 @@ static class GameTextProfiles {
   Require(TranslationVariants.Valid(variant),"Неизвестный вариант перевода.");
   var all=Regex.Matches(output??"",@"^PROFILE[^\r\n]*",RegexOptions.Multiline);
   Require(all.Count==1,"Профиль игры не подтверждён. Повторите проверку совместимости.");
-  var match=Regex.Match(all[0].Value,@"^PROFILE game=(1\.18|1\.24|1\.26) records=([0-9]+) text=([0-9]+(?:\.[0-9]+){1,3}) channel=(pinned|stable)$");
+  var match=Regex.Match(all[0].Value,@"^PROFILE game=(1\.18|1\.20|1\.24|1\.26) records=([0-9]+) text=([0-9]+(?:\.[0-9]+){1,3}) channel=(pinned|stable)$");
   Require(match.Success,"Ответ проверки профиля игры повреждён.");
   string version=match.Groups[1].Value, channel=match.Groups[4].Value;
   int records=Int32.Parse(match.Groups[2].Value);
-  Require(records==(version=="1.18"?56439:version=="1.24"?55991:56134),"Число строк не соответствует версии игры.");
+  Require(records==(version=="1.18"?56439:(version=="1.20"||version=="1.24")?55991:56134),"Число строк не соответствует версии игры.");
   Require(channel==(version=="1.26"?"stable":"pinned"),"Канал текста не соответствует версии игры.");
   return new GameTextProfile{GameVersion=version,Records=records,TextVersion=match.Groups[3].Value,Channel=channel,GamePath=CanonicalPath(game),Variant=variant};
  }

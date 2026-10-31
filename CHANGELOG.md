@@ -1,3 +1,25 @@
+﻿# Additional startup and interaction fixes
+
+- Load game folder before selecting the default Steam voice language.
+- Disable background keyboard targets while a panel dialog is open; restore on Esc.
+- Show invalid or missing game-folder feedback inside Settings.
+- Carry the external single-EXE directory into the verified cached launcher.
+
+# Footer and autopath fix
+
+- Separate footer control columns and local button background painting.
+- Automatic validated Steam/EA game directory discovery with saved-path precedence.
+- Stale path fallback and explicit choice when installations are ambiguous.
+- Preserve compatibility preparation, manual folder choice, and pinned1.20 support.
+
+# Local native redesign test — 2026-10-31
+
+- Main screen and modal navigation adapted from the supplied PDF.
+- Dark speech-command and Max-test windows; complete logs retained.
+- Compatibility/backend bytes and exact 1.20 profile retained.
+- Cancel-default confirmations, busy guards and interrupted-update UI gates.
+- Visual screenshot review still pending; not a GitHub release.
+
 # 0.31 — один EXE и русские голосовые команды
 
 - Самораспаковывающийся EXE с проверкой встроенных файлов; отдельная распаковка не нужна.

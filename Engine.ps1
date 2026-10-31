@@ -142,7 +142,7 @@ try{
  ResolveMicroArchive
  # Resolve text only after the game's EXE and DAT have selected one resource
  # profile. Hash history, variant switching and transaction recovery are scoped
- # to that profile's language set; 1.18/1.24/1.26 text is never interchangeable.
+ # to that profile's language set; 1.18/1.20/1.24/1.26 text is never interchangeable.
  $selectedSet=$m;$gameVersion='1.26';$textChannel='stable'
  $languageRecords=56134;if($m.language_records){$languageRecords=[int]$m.language_records}
  if($languageRecords -ne 56134){throw 'Неверный набор строк текущего канала перевода.'}
@@ -150,9 +150,9 @@ try{
  $russianPayload='language.lng';$namesPayload='language-original-names.lng'
  if($profile.language_set){
   $setId=[string]$profile.language_set
-  if($setId -notin @('1.18','1.24') -or $profile.game_version -cne $setId -or $profile.micro_compatibility){throw 'Неверный версионный профиль перевода.'}
+  if($setId -notin @('1.18','1.20','1.24') -or $profile.game_version -cne $setId -or $profile.micro_compatibility){throw 'Неверный версионный профиль перевода.'}
   $selectedSet=$m.language_sets.($setId)
-  $expectedRecords=@{'1.18'=56439;'1.24'=55991}
+  $expectedRecords=@{'1.18'=56439;'1.20'=55991;'1.24'=55991}
   if(!$selectedSet -or [int]$selectedSet.records -ne $expectedRecords[$setId]){throw 'Неверный набор строк версионного перевода.'}
   $russianPayload='language-'+$setId+'.lng';$namesPayload='language-'+$setId+'-original-names.lng'
   if($selectedSet.payload -cne $russianPayload){throw 'Неверный маршрут версионного перевода.'}

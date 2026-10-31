@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "source_pdf": {
+    "path": "source-reference/F1_25_Launcher_All_Windows.pdf",
+    "bytes": 11707845,
+    "sha256": "1b1fac67e9f93b4480624a01a0fac16671844b1718407ef6a89ecf2b069b9fc1"
+  },
+  "source_reference": {
+    "path": "source-reference/screen-03-page-06-1.jpg",
+    "bytes": 608442,
+    "sha256": "6e5128a4f3160747d5cd2bc1e60cce5701b2c4c9eb8b2fb6c6673362c2f0a972"
+  },
+  "reference_extraction": {
+    "method": "pypdf embedded ImageFile.data, written without decoding, cropping or pixel edits",
+    "count": 21,
+    "index": "source-reference/INDEX.json",
+    "all_dimensions_px": [
+      1536,
+      1024
+    ]
+  },
+  "hero": {
+    "path": "assets/redesign/hero-branded.png",
+    "bytes": 2305957,
+    "sha256": "15b62b9011d0f6f8e270a0a54fa5d6861fc033c01a9fdac9faf6aa1ff4f1f827",
+    "dimensions_px": [
+      1536,
+      1024
+    ],
+    "mode": "RGB",
+    "method": "image_gen edit of provided source reference; no Python image processing",
+    "generated_original": "source-reference/exec-966e2d95-dc6a-4579-b1de-053a74920eba.png",
+    "preserved": [
+      "silver car",
+      "camera angle",
+      "source crop",
+      "garage photographic composition",
+      "large lower-left F1 25 / НА РУССКОМ / KARSVEIN branding"
+    ],
+    "removed": [
+      "top interactive toolbar",
+      "bottom interactive status/action bar",
+      "small instruction and journal links"
+    ],
+    "note": "Original clean photograph was not found in local project folders. This asset is an AI-inpainted derivative of the supplied PDF reference, not an original official photograph."
+  },
+  "header_logo": {
+    "path": "assets/redesign/header-source.jpg",
+    "bytes": 608442,
+    "sha256": "6e5128a4f3160747d5cd2bc1e60cce5701b2c4c9eb8b2fb6c6673362c2f0a972",
+    "dimensions_px": [
+      1536,
+      1024
+    ],
+    "method": "byte-identical copy of source embedded JPEG; renderer draws source rectangle directly, without source image modification",
+    "source_rectangle_px": {
+      "x": 54,
+      "y": 26,
+      "width": 188,
+      "height": 29
+    },
+    "logical_destination": {
+      "x": 34,
+      "y": 16,
+      "width": 118,
+      "height": 18
+    },
+    "alpha": false,
+    "note": "Use DrawImage source rectangle; exact reference logo includes original very dark header background. Imagegen logo attempts were rejected and are not included in package assets."
+  },
+  "changed_scope": "Only new asset files and reference/spec documents. No backend, game resources, runtime registry, game launch or executable changes performed by asset agent."
+}

@@ -32,75 +32,109 @@ sealed class SpeechState {
 sealed class SpeechWindow : Form {
  readonly string home,game;readonly bool readOnly;
  readonly Label heading,stateText,modelText,pathText;
- readonly Button refresh,install,restore,verify,model,migrate,close,detailedGuide;
+ readonly Button refresh,install,restore,verify,model,migrate,close,detailedGuide,extra,back,windowClose,copyReport;
  readonly TextBox diagnostics;readonly ListView commands;readonly TabControl tabs;
- readonly ProgressBar progress;SpeechState state;bool busy;
+ readonly ProgressBar progress;readonly ContextMenuStrip additional;SpeechState state;bool busy,renderOnly;
  public string LastReport{get;private set;}
  const string Sample="{\"status\":\"ready\",\"code\":\"READY\",\"message\":\"Русские команды настроены для английского языка игры.\",\"modelInstalled\":true,\"installed\":true,\"needsRestart\":false,\"gameRunning\":false,\"canInstall\":true,\"canRestore\":true,\"commandCount\":37,\"details\":{\"preview\":true,\"systemChanges\":false}}";
- static readonly Color Ink=Color.FromArgb(34,40,49),Muted=Color.FromArgb(91,100,110),Accent=Color.FromArgb(251,189,20);
+ static readonly Color Ink=Color.FromArgb(244,245,245),Muted=Color.FromArgb(157,164,170),Accent=Color.FromArgb(227,38,46),Surface=Color.FromArgb(25,28,32),Line=Color.FromArgb(48,53,59);
  public SpeechWindow(string packageHome,string gamePath,bool preview) {
   home=Path.GetFullPath(packageHome);game=gamePath;readOnly=preview;
-  Text="F1 25 · Голосовые команды";ClientSize=new Size(760,644);FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;StartPosition=FormStartPosition.CenterParent;AutoScaleMode=AutoScaleMode.None;
-  BackColor=Color.FromArgb(246,247,244);ForeColor=Ink;Font=new Font("Segoe UI",9.5f);LastReport="";
-  Label top=LabelAt(this,"Русские голосовые команды",24,18,710,34,19,FontStyle.Bold);top.ForeColor=Ink;
-  LabelAt(this,"English в клиенте игры · русский текст сохраняется",25,57,710,26,10,FontStyle.Regular).ForeColor=Muted;
-  tabs=new TabControl{Bounds=new Rectangle(20,95,720,473),Font=Font};Controls.Add(tabs);
-  var setup=new TabPage("Настройка"){BackColor=Color.White};var guide=new TabPage("Все команды"){BackColor=Color.White};var log=new TabPage("Диагностика"){BackColor=Color.White};tabs.TabPages.AddRange(new[]{setup,guide,log});
-  heading=LabelAt(setup,"Проверяем состояние…",18,18,670,30,13,FontStyle.Bold);
-  stateText=LabelAt(setup,"Установка сама не начинается. Проверка только читает настройки.",18,54,670,58,9.5f,FontStyle.Regular);
-  modelText=LabelAt(setup,"Русский компонент: ещё не проверен",18,117,670,24,9.5f,FontStyle.Regular);modelText.ForeColor=Muted;
-  pathText=LabelAt(setup,"Папка: "+game,18,145,670,24,8.5f,FontStyle.Regular);pathText.AutoEllipsis=true;pathText.ForeColor=Muted;
-  install=ButtonAt(setup,"Настроить русские команды",18,184,325,39,true);install.Click+=(s,e)=>ConfirmInstall();
-  refresh=ButtonAt(setup,"Проверить состояние",357,184,331,39,false);refresh.Click+=(s,e)=>Run("status",null);
-  model=ButtonAt(setup,"Установить компонент Microsoft",18,234,325,37,false);model.Click+=(s,e)=>ConfirmModel();
-  verify=ButtonAt(setup,"Проверить установку",357,234,331,37,false);verify.Click+=(s,e)=>Run("verify",null);
-  restore=ButtonAt(setup,"Откатить голосовые команды",18,282,325,37,false);restore.Click+=(s,e)=>ConfirmRestore();
-  migrate=ButtonAt(setup,"Перенести прежнюю настройку…",357,282,331,37,false);migrate.Click+=(s,e)=>ConfirmMigration();
-  LabelAt(setup,"Как говорить с инженером",18,338,670,27,11,FontStyle.Bold);
-  LabelAt(setup,"На трассе, без паузы, удерживайте T (русская Е) и скажите «Прогноз погоды».\nКнопка — «Радио / голосовые команды», не «Нажать, чтобы говорить».\nПроизносите точно как в русском меню. Доступность зависит от режима.",18,369,670,64,9.5f,FontStyle.Regular);
-  LabelAt(guide,"Произносите фразу из левого столбца. Игра сама учитывает режим заезда.",18,16,670,25,9.5f,FontStyle.Regular);
-  commands=new ListView{Bounds=new Rectangle(18,50,670,286),View=View.Details,FullRowSelect=true,GridLines=true,HideSelection=false,HeaderStyle=ColumnHeaderStyle.Nonclickable};commands.Columns.Add("Скажите по-русски",330);commands.Columns.Add("Игровая команда",310);guide.Controls.Add(commands);
-  LabelAt(guide,"«Прогноз погоды» подходит для первого теста на тренировке. «Состояние шин»\nдоступно не во всех режимах. Категории и режимы каждой команды — в справочнике.",18,346,670,44,9,FontStyle.Regular);
-  detailedGuide=ButtonAt(guide,"Подробный справочник",18,397,325,37,false);detailedGuide.Click+=(s,e)=>OpenGuide();
-  diagnostics=new TextBox{Bounds=new Rectangle(18,18,670,411),Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Both,WordWrap=false,Font=new Font("Consolas",9),BackColor=Color.White};log.Controls.Add(diagnostics);
-  progress=new ProgressBar{Bounds=new Rectangle(25,578,540,5),Style=ProgressBarStyle.Marquee,Visible=false};Controls.Add(progress);
-  LabelAt(this,readOnly?"ПРЕДПРОСМОТР · демонстрационные данные, без изменений":"Отдельная фоновая программа не требуется. Игра автоматически не закрывается.",25,595,550,33,8.5f,FontStyle.Regular).ForeColor=Muted;
-  close=ButtonAt(this,"Закрыть",597,585,138,38,false);close.Click+=(s,e)=>Close();CancelButton=close;
+  Text="F1 25 · Голосовые команды";ClientSize=new Size(560,520);FormBorderStyle=FormBorderStyle.None;MaximizeBox=false;MinimizeBox=false;StartPosition=FormStartPosition.CenterParent;AutoScaleMode=AutoScaleMode.Dpi;
+  BackColor=Surface;ForeColor=Ink;Font=new Font("Segoe UI",10.5f);LastReport="";KeyPreview=true;DoubleBuffered=true;
+  using(var clip=Shape.Round(ClientRectangle,14))Region=new Region(clip);
+  Paint+=(s,e)=>{using(var pen=new Pen(Line))using(var outline=Shape.Round(new Rectangle(0,0,Width-1,Height-1),14))e.Graphics.DrawPath(pen,outline);};
+  back=ButtonAt(this,"Озвучка",16,12,128,34,false);((UiButton)back).Glyph=0xf12f;back.AccessibleName="Назад к озвучке";back.Click+=(s,e)=>Close();
+  LabelAt(this,"Голосовые команды",163,14,330,28,12,FontStyle.Bold);
+  windowClose=ButtonAt(this,"",514,12,30,30,false);((UiButton)windowClose).Glyph=0xf659;windowClose.AccessibleName="Закрыть голосовые команды";windowClose.Click+=(s,e)=>Close();
+  tabs=new SpeechTabs{Bounds=new Rectangle(16,60,528,392),Font=Font};Controls.Add(tabs);
+  var setup=new TabPage("Настройка"){BackColor=Surface,ForeColor=Ink};var guide=new TabPage("Все команды"){BackColor=Surface,ForeColor=Ink};var log=new TabPage("Диагностика"){BackColor=Surface,ForeColor=Ink};tabs.TabPages.AddRange(new[]{setup,guide,log});
+  modelText=LabelAt(setup,"Русский компонент: ещё не проверен",16,16,488,22,10.5f,FontStyle.Regular);modelText.ForeColor=Muted;
+  pathText=LabelAt(setup,"Папка: "+game,16,41,488,22,10.5f,FontStyle.Regular);pathText.AutoEllipsis=true;pathText.ForeColor=Muted;pathText.AccessibleDescription=game;
+  heading=LabelAt(setup,"Проверяем состояние…",16,78,488,54,16,FontStyle.Bold);
+  stateText=LabelAt(setup,"Установка сама не начинается. Проверка только читает настройки.",16,133,488,55,10.5f,FontStyle.Regular);stateText.AutoEllipsis=true;stateText.ForeColor=Muted;
+  install=ButtonAt(setup,"Настроить русские команды",16,196,278,42,true);install.Click+=(s,e)=>ConfirmInstall();
+  model=ButtonAt(setup,"Установить компонент Microsoft",16,196,278,42,true);model.Click+=(s,e)=>ConfirmModel();
+  verify=ButtonAt(setup,"Проверить установку",16,196,278,42,true);verify.Click+=(s,e)=>Run("verify",null);
+  refresh=ButtonAt(setup,"Проверить состояние",308,196,196,42,false);refresh.Click+=(s,e)=>Run("status",null);
+  // Rare actions remain independently gated and are surfaced through the menu.
+  restore=ButtonAt(setup,"Откатить голосовые команды",16,196,278,42,false);restore.Visible=false;restore.Click+=(s,e)=>ConfirmRestore();
+  migrate=ButtonAt(setup,"Перенести прежнюю настройку…",16,196,278,42,false);migrate.Visible=false;migrate.Click+=(s,e)=>ConfirmMigration();
+  setup.Controls.Add(new Panel{Bounds=new Rectangle(16,256,488,1),BackColor=Line});
+  LabelAt(setup,"На трассе",16,274,488,24,11,FontStyle.Bold);
+  LabelAt(setup,"Удерживайте T (русская Е) и скажите «Прогноз погоды».\nПроизносите фразу как в русском радиоменю.",16,300,488,49,10.5f,FontStyle.Regular).ForeColor=Muted;
+  LabelAt(guide,"Произносите фразу из русского столбца.",16,12,488,24,10.5f,FontStyle.Regular).ForeColor=Muted;
+  commands=new ListView{Bounds=new Rectangle(16,42,488,224),View=View.Details,FullRowSelect=true,GridLines=false,HideSelection=false,HeaderStyle=ColumnHeaderStyle.Nonclickable,BackColor=Surface,ForeColor=Ink,BorderStyle=BorderStyle.FixedSingle,Font=Font,ShowItemToolTips=true,OwnerDraw=true};commands.Columns.Add("Скажите по-русски",278);commands.Columns.Add("Игровая команда",188);guide.Controls.Add(commands);
+  commands.DrawColumnHeader+=(s,e)=>{using(var b=new SolidBrush(Color.FromArgb(35,39,44)))e.Graphics.FillRectangle(b,e.Bounds);TextRenderer.DrawText(e.Graphics,e.Header.Text,Font,new Rectangle(e.Bounds.X+8,e.Bounds.Y,e.Bounds.Width-12,e.Bounds.Height),Muted,TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);};
+  commands.DrawItem+=(s,e)=>{};
+  commands.DrawSubItem+=(s,e)=>{using(var b=new SolidBrush(e.Item.Selected?Color.FromArgb(45,50,56):Surface))e.Graphics.FillRectangle(b,e.Bounds);TextRenderer.DrawText(e.Graphics,e.SubItem.Text,Font,new Rectangle(e.Bounds.X+7,e.Bounds.Y,e.Bounds.Width-11,e.Bounds.Height),Ink,TextFormatFlags.VerticalCenter|TextFormatFlags.SingleLine|TextFormatFlags.EndEllipsis);};
+  LabelAt(guide,"Доступность зависит от режима. Для первого теста\nиспользуйте «Прогноз погоды» на тренировке.",16,272,488,40,10.5f,FontStyle.Regular).ForeColor=Muted;
+  detailedGuide=ButtonAt(guide,"Подробный справочник",16,314,278,34,false);detailedGuide.Click+=(s,e)=>OpenGuide();
+  diagnostics=new TextBox{Bounds=new Rectangle(16,16,488,272),Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Both,WordWrap=false,Font=new Font("Consolas",10.5f),BackColor=Color.FromArgb(17,19,21),ForeColor=Ink,BorderStyle=BorderStyle.FixedSingle,AccessibleName="Полный диагностический отчёт"};log.Controls.Add(diagnostics);
+  copyReport=ButtonAt(log,"Копировать отчёт",16,304,238,40,true);copyReport.Click+=(s,e)=>CopyReport();
+  additional=new ContextMenuStrip{BackColor=Surface,ForeColor=Ink,Font=Font,ShowImageMargin=false,Renderer=new SpeechMenuRenderer()};
+  extra=ButtonAt(this,"Дополнительно",24,480,190,30,false);((UiButton)extra).Glyph=0xf5d4;extra.Click+=(s,e)=>ShowAdditional();
+  progress=new ProgressBar{Bounds=new Rectangle(24,453,512,3),Style=ProgressBarStyle.Marquee,Visible=false};Controls.Add(progress);
+  LabelAt(this,readOnly?"Предпросмотр · данные демонстрационные":"Отдельная фоновая программа не требуется.",24,457,512,22,10.5f,FontStyle.Regular).ForeColor=Muted;
+  close=ButtonAt(this,"Закрыть",414,480,122,30,false);close.Click+=(s,e)=>Close();CancelButton=close;
   LoadCommands();RefreshButtons();
   if(readOnly){Apply(SpeechState.Parse(Sample),Sample);heading.Text="Предпросмотр: команды настроены";}
   Shown+=(s,e)=>{if(!readOnly)Run("status",null);};
  }
  static Label LabelAt(Control owner,string text,int x,int y,int w,int h,float size,FontStyle style){var label=new Label{Text=text,Bounds=new Rectangle(x,y,w,h),Font=new Font("Segoe UI",size,style),BackColor=Color.Transparent};owner.Controls.Add(label);return label;}
- static Button ButtonAt(Control owner,string text,int x,int y,int w,int h,bool primary){var button=new UiButton{Text=text,Bounds=new Rectangle(x,y,w,h),Primary=primary,Font=new Font("Segoe UI",9.5f,FontStyle.Bold),AccessibleName=text};owner.Controls.Add(button);return button;}
+ static Button ButtonAt(Control owner,string text,int x,int y,int w,int h,bool primary){var button=new UiButton{Text=text,Bounds=new Rectangle(x,y,w,h),Primary=primary,Font=new Font("Segoe UI",10.5f,FontStyle.Bold),AccessibleName=text};owner.Controls.Add(button);return button;}
+ void ShowAdditional(){
+  if(busy)return;additional.Items.Clear();
+  AddAction("Проверить установку",verify.Enabled,()=>Run("verify",null));
+  AddAction("Настроить повторно",install.Enabled,ConfirmInstall);
+  additional.Items.Add(new ToolStripSeparator());
+  AddAction("Вернуть прежние команды",restore.Enabled,ConfirmRestore);
+  AddAction("Перенести прежнюю настройку…",migrate.Enabled,ConfirmMigration);
+  additional.Show(extra,new Point(0,-additional.PreferredSize.Height));
+ }
+ void AddAction(string text,bool enabled,Action action){var item=new ToolStripMenuItem(text){Enabled=enabled};item.Click+=(s,e)=>action();additional.Items.Add(item);}
+ internal string ReportToCopy(){return LastReport??"";}
+ void CopyReport(){
+  if(readOnly||busy||ReportToCopy().Length==0)return;
+  try{Clipboard.SetText(ReportToCopy());copyReport.Text="Отчёт скопирован";}
+  catch(Exception ex){stateText.Text="Копирование отчёта не завершено: "+ex.Message;tabs.SelectedIndex=2;}
+ }
  void LoadCommands(){
   try{string file=Path.Combine(home,"speech","commands.ru.json");if(!File.Exists(file)){diagnostics.Text="Переоткройте исходный EXE: встроенный справочник команд не прошёл проверку.";return;}
    if(new FileInfo(file).Length>131072)throw new InvalidDataException("Справочник слишком велик.");
    var map=new JavaScriptSerializer{MaxJsonLength=131072}.Deserialize<Dictionary<string,string>>(File.ReadAllText(file,Encoding.UTF8));if(map==null||map.Count>500)throw new InvalidDataException("Неверный справочник.");
-   foreach(var pair in map){if(pair.Key.Length>200||pair.Value==null||pair.Value.Length>200)throw new InvalidDataException("Неверная строка справочника.");commands.Items.Add(new ListViewItem(new[]{pair.Value,pair.Key}));}
+   foreach(var pair in map){if(pair.Key.Length>200||pair.Value==null||pair.Value.Length>200)throw new InvalidDataException("Неверная строка справочника.");var item=new ListViewItem(new[]{pair.Value,pair.Key}){ToolTipText=pair.Value+"\n"+pair.Key};commands.Items.Add(item);}
   }catch(Exception ex){diagnostics.Text="Справочник: "+ex.Message;}
  }
  void RefreshButtons(){
-  bool active=!busy&&!readOnly,known=state!=null&&!state.Status.Equals("error",StringComparison.OrdinalIgnoreCase)&&!state.Status.Equals("failed",StringComparison.OrdinalIgnoreCase);
+  bool active=!busy&&(!readOnly||renderOnly),known=state!=null&&!state.Status.Equals("error",StringComparison.OrdinalIgnoreCase)&&!state.Status.Equals("failed",StringComparison.OrdinalIgnoreCase);
   refresh.Enabled=active;verify.Enabled=active&&known&&state.Installed;
   install.Enabled=active&&known&&state.ModelInstalled&&state.CanInstall&&!state.GameRunning;
   install.Text=state!=null&&state.Code=="dictionary_update_available"?"Обновить фразы из меню":"Настроить русские команды";
   restore.Enabled=active&&known&&state.CanRestore&&!state.GameRunning;
   model.Enabled=active&&known&&!state.ModelInstalled&&!state.GameRunning;
   migrate.Enabled=active&&known&&state.ModelInstalled&&!state.GameRunning;
-  detailedGuide.Enabled=active&&File.Exists(Path.Combine(home,"speech","COMMANDS.html"));close.Enabled=!busy;progress.Visible=busy;
+  bool missingModel=known&&!state.ModelInstalled,alreadyInstalled=known&&state.Installed&&state.Code!="dictionary_update_available";
+  model.Visible=missingModel;verify.Visible=!missingModel&&alreadyInstalled;install.Visible=!missingModel&&!alreadyInstalled;
+  restore.Visible=false;migrate.Visible=false;
+  detailedGuide.Enabled=active&&File.Exists(Path.Combine(home,"speech","COMMANDS.html"));close.Enabled=!busy;back.Enabled=!busy;windowClose.Enabled=!busy;extra.Enabled=active;copyReport.Enabled=active&&ReportToCopy().Length>0;progress.Visible=busy;
  }
  void Apply(SpeechState result,string raw){
   state=result;LastReport=raw;diagnostics.Text=raw;
+  copyReport.Text="Копировать отчёт";
   heading.Text=result.Installed?"Русские команды настроены":result.ModelInstalled?"Русский компонент установлен":"Нужен русский компонент Microsoft";
   if(result.Code=="external_route")heading.Text="Команды уже настроены ранее";
   if(result.Code=="dictionary_update_available")heading.Text="Доступны исправленные фразы из меню";
   if(result.GameRunning)heading.Text="Игра запущена — изменения отложены";
   if(result.Status.Equals("error",StringComparison.OrdinalIgnoreCase)||result.Status.Equals("failed",StringComparison.OrdinalIgnoreCase))heading.Text="Проверка требует внимания";
   stateText.Text=result.Message+(result.NeedsRestart?"\nПерезапустите игру после завершения настройки.":"");
+  stateText.AccessibleDescription=stateText.Text;
+  stateText.ForeColor=result.Status.Equals("error",StringComparison.OrdinalIgnoreCase)||result.Status.Equals("failed",StringComparison.OrdinalIgnoreCase)?Accent:Muted;
   modelText.Text="Русский компонент: "+(result.ModelInstalled?"установлен":"не найден")+"    ·    Команд: "+result.CommandCount;
+  modelText.ForeColor=result.ModelInstalled?Color.FromArgb(84,206,105):Muted;
   RefreshButtons();
  }
- bool Confirm(string text,string title){return !readOnly&&MessageBox.Show(this,text,title,MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)==DialogResult.Yes;}
+ bool Confirm(string text,string title){if(readOnly)return false;using(var dialog=new SpeechConfirmWindow(title,text)){return dialog.ShowDialog(this)==DialogResult.Yes;}}
  void ConfirmInstall(){if(!install.Enabled)return;
   bool update=state!=null&&state.Code=="dictionary_update_available";
   string text=update?"Обновить фразы, чтобы они совпадали с русским радиоменю?\n\nИзменится только словарь игры; реестр и языковые привязки останутся прежними. Предыдущие фразы и исходный откат сохранятся. После обновления перезапустите игру.":"Настроить русские голосовые команды для English?\n\nБудет изменён файл команд игры и общие языковые привязки Microsoft Speech (409 / 809). Другие приложения, использующие эти привязки, тоже могут увидеть русский движок. Исходные значения сохранятся для отката.\n\nНаш русский текст и шрифты сохраняются. Язык в Steam / EA app оставьте English. После настройки перезапустите игру.\n\nПродолжить?";
@@ -114,7 +148,7 @@ sealed class SpeechWindow : Form {
    if(Confirm("Перенести прежнюю настройку из выбранного файла?\n\n"+picker.FileName+"\n\nМодуль проверит текущие файлы и сохранённые значения. Игра должна быть закрыта. Русский текст и шрифты сохраняются.","Перенос прежней настройки"))Run("migrate",picker.FileName);
   }
  }
- void OpenGuide(){if(!detailedGuide.Enabled||readOnly)return;try{string file=Path.Combine(home,"speech","COMMANDS.html");if(!File.Exists(file)||(File.GetAttributes(file)&FileAttributes.ReparsePoint)!=0)throw new IOException("Переоткройте исходный EXE: встроенный подробный справочник не прошёл проверку.");Process.Start(new ProcessStartInfo(file){UseShellExecute=true});}catch(Exception ex){MessageBox.Show(this,ex.Message,"Справочник",MessageBoxButtons.OK,MessageBoxIcon.Information);}}
+ void OpenGuide(){if(!detailedGuide.Enabled||readOnly)return;try{string file=Path.Combine(home,"speech","COMMANDS.html");if(!File.Exists(file)||(File.GetAttributes(file)&FileAttributes.ReparsePoint)!=0)throw new IOException("Переоткройте исходный EXE: встроенный подробный справочник не прошёл проверку.");Process.Start(new ProcessStartInfo(file){UseShellExecute=true});}catch(Exception ex){using(var dialog=new SpeechConfirmWindow("Справочник",ex.Message,true))dialog.ShowDialog(this);}}
  internal static bool IsMutation(string action){return action=="install"||action=="restore"||action=="migrate"||action=="model";}
  internal static string Quote(string value){
   if(value==null||value.IndexOf('\0')>=0||value.IndexOf('\r')>=0||value.IndexOf('\n')>=0)throw new ArgumentException("Неверный аргумент команды.");
@@ -159,7 +193,9 @@ sealed class SpeechWindow : Form {
    string result=Path.Combine(full,"result.json");if(File.Exists(result)&&(File.GetAttributes(result)&FileAttributes.ReparsePoint)==0)File.Delete(result);if(Directory.GetFileSystemEntries(full).Length==0)Directory.Delete(full);
   }catch(IOException){}catch(UnauthorizedAccessException){}
  }
+ protected override bool ProcessDialogKey(Keys keyData){if(busy&&(keyData&Keys.KeyCode)==Keys.Escape)return true;return base.ProcessDialogKey(keyData);}
  protected override void OnFormClosing(FormClosingEventArgs e){if(busy){e.Cancel=true;return;}base.OnFormClosing(e);}
+ protected override void Dispose(bool disposing){if(disposing&&additional!=null)additional.Dispose();base.Dispose(disposing);}
  public static int HostTest(string home,string output,string gamePath){
   var log=new StringBuilder();try{
    if(!Path.IsPathRooted(gamePath)||!Directory.Exists(gamePath))throw new ArgumentException("Для теста нужен полный путь к существующей игре.");
@@ -171,7 +207,17 @@ sealed class SpeechWindow : Form {
    log.AppendLine("SPEECH_HOST_PASS calls=2 actions=status,status elevated=false temporary_folders=removed game_writes=false registry_writes=false");File.WriteAllText(output,log.ToString(),Encoding.UTF8);return 0;
   }catch(Exception ex){log.AppendLine(ex.ToString());File.WriteAllText(output,log.ToString(),Encoding.UTF8);return 1;}
  }
- public static int Preview(string home,string output,string page=null){using(var form=new SpeechWindow(home,@"C:\Games\F1 25",true)){form.ShowInTaskbar=false;form.StartPosition=FormStartPosition.Manual;form.Location=new Point(-30000,-30000);form.Show();if(page=="commands")form.tabs.SelectedIndex=1;Application.DoEvents();using(var bitmap=new Bitmap(form.Width,form.Height)){form.DrawToBitmap(bitmap,new Rectangle(Point.Empty,form.Size));bitmap.Save(output);}return 0;}}
+ internal static SpeechWindow CreatePreview(string home,string page){
+  if(page==null)page="setup";
+  if(page!="setup"&&page!="commands"&&page!="diagnostics")throw new ArgumentException("Неизвестное состояние предпросмотра.");
+  var form=new SpeechWindow(home,@"C:\Games\F1 25",true);
+  form.renderOnly=true;form.ShowInTaskbar=true;form.StartPosition=FormStartPosition.CenterScreen;
+  form.heading.Text="Русские команды настроены";
+  if(page=="commands")form.tabs.SelectedIndex=1;
+  else if(page=="diagnostics")form.tabs.SelectedIndex=2;
+  else{var sample=SpeechState.Parse(Sample);sample.Installed=false;sample.CanRestore=false;sample.Message="Русский текст и субтитры сохранятся.";form.Apply(sample,Sample);form.heading.Text="Можно настроить русские команды";}
+  form.RefreshButtons();return form;
+ }
  public static int SelfTest(string home,string output){
   int checks=0;Action<bool,string> check=(value,why)=>{if(!value)throw new Exception(why);checks++;};
   try{
@@ -188,7 +234,8 @@ sealed class SpeechWindow : Form {
     check(form.detailedGuide.Text=="Подробный справочник","detailed guide entry");
     form.Run("install",null);check(!form.busy,"preview starts no process");check(form.tabs.TabPages.Count==3,"three pages");
     check(form.stateText.Text.Contains("английского"),"English routing description");check(form.commands.Columns.Count==2,"command reference columns");
-    foreach(TabPage tab in form.tabs.TabPages)foreach(Control control in tab.Controls)check(control.Left>=0&&control.Top>=0&&control.Right<=712&&control.Bottom<=445,"dialog child bounds");
+    check(form.commands.Items.Count==37,"all command phrases retained");check(form.ReportToCopy()==Sample&&form.diagnostics.Text==Sample,"full diagnostic report retained for copying");
+    foreach(TabPage tab in form.tabs.TabPages)foreach(Control control in tab.Controls)check(control.Left>=0&&control.Top>=0&&control.Right<=512&&control.Bottom<=354,"dialog child bounds");
    }
    using(var form=new SpeechWindow(home,@"C:\Games\F1 25",false)){
     check(form.state==null&&!form.install.Enabled&&!form.model.Enabled,"first action waits for status");
@@ -201,6 +248,39 @@ sealed class SpeechWindow : Form {
    }
    File.WriteAllText(output,"SPEECH_UI_PASS checks="+checks+" host_calls=0 game_writes=false registry_writes=false",Encoding.UTF8);return 0;
   }catch(Exception ex){File.WriteAllText(output,ex.ToString(),Encoding.UTF8);return 1;}
+ }
+}
+
+sealed class SpeechTabs : TabControl {
+ static readonly Color Surface=Color.FromArgb(25,28,32),Ink=Color.FromArgb(244,245,245),Muted=Color.FromArgb(157,164,170),Accent=Color.FromArgb(227,38,46);
+ public SpeechTabs(){DrawMode=TabDrawMode.OwnerDrawFixed;SizeMode=TabSizeMode.Fixed;ItemSize=new Size(154,34);Padding=new Point(12,8);}
+ protected override void OnDrawItem(DrawItemEventArgs e){
+  bool selected=e.Index==SelectedIndex;Rectangle r=GetTabRect(e.Index);
+  using(var brush=new SolidBrush(Surface))e.Graphics.FillRectangle(brush,r);
+  TextRenderer.DrawText(e.Graphics,TabPages[e.Index].Text,Font,r,selected?Ink:Muted,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.SingleLine);
+  if(selected)using(var pen=new Pen(Accent,2))e.Graphics.DrawLine(pen,r.Left+10,r.Bottom-2,r.Right-10,r.Bottom-2);
+  if(Focused&&selected)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(r.Left+6,r.Top+4,r.Width-12,r.Height-8),Ink,Surface);
+ }
+ protected override void WndProc(ref Message m){base.WndProc(ref m);if(m.Msg==0x000F&&IsHandleCreated)using(var g=Graphics.FromHwnd(Handle))using(var pen=new Pen(Surface,3)){g.DrawRectangle(pen,1,1,Width-3,Height-3);if(TabPages.Count>0)g.DrawRectangle(pen,DisplayRectangle.Left-2,DisplayRectangle.Top-2,DisplayRectangle.Width+3,DisplayRectangle.Height+3);}}
+}
+
+sealed class SpeechMenuRenderer : ToolStripProfessionalRenderer {
+ protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e){using(var b=new SolidBrush(Color.FromArgb(25,28,32)))e.Graphics.FillRectangle(b,e.AffectedBounds);}
+ protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e){if(e.Item.Selected)using(var b=new SolidBrush(Color.FromArgb(45,50,56)))e.Graphics.FillRectangle(b,new Rectangle(Point.Empty,e.Item.Size));}
+ protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e){e.TextColor=e.Item.Enabled?Color.FromArgb(244,245,245):Color.FromArgb(125,132,139);base.OnRenderItemText(e);}
+}
+
+sealed class SpeechConfirmWindow : Form {
+ public SpeechConfirmWindow(string title,string text,bool information=false){
+  Text=title;ClientSize=new Size(500,384);FormBorderStyle=FormBorderStyle.None;StartPosition=FormStartPosition.CenterParent;AutoScaleMode=AutoScaleMode.Dpi;Font=new Font("Segoe UI",10.5f);BackColor=Color.FromArgb(25,28,32);ForeColor=Color.FromArgb(244,245,245);KeyPreview=true;
+  using(var clip=Shape.Round(ClientRectangle,14))Region=new Region(clip);
+  Paint+=(s,e)=>{using(var pen=new Pen(Color.FromArgb(48,53,59)))using(var outline=Shape.Round(new Rectangle(0,0,Width-1,Height-1),14))e.Graphics.DrawPath(pen,outline);};
+  Controls.Add(new Label{Text=title,Bounds=new Rectangle(24,20,452,52),Font=new Font("Segoe UI",16,FontStyle.Bold),ForeColor=ForeColor,BackColor=Color.Transparent});
+  Controls.Add(new TextBox{Text=text,Bounds=new Rectangle(24,84,452,224),Font=Font,Multiline=true,ReadOnly=true,BorderStyle=BorderStyle.None,ScrollBars=ScrollBars.Vertical,WordWrap=true,BackColor=BackColor,ForeColor=ForeColor,AccessibleName="Описание подтверждаемого действия"});
+  var cancel=new UiButton{Text=information?"Закрыть":"Отмена",Bounds=new Rectangle(information?360:236,336,116,36),Font=Font,DialogResult=DialogResult.No,AccessibleName=information?"Закрыть сообщение":"Отменить настройку"};
+  string action=title.StartsWith("Обновление",StringComparison.Ordinal)?"Обновить":title.StartsWith("Компонент",StringComparison.Ordinal)?"Установить":title.StartsWith("Откат",StringComparison.Ordinal)?"Восстановить":title.StartsWith("Перенос",StringComparison.Ordinal)?"Перенести":"Настроить";
+  var accept=new UiButton{Text=action,Bounds=new Rectangle(360,336,116,36),Font=new Font("Segoe UI",10.5f,FontStyle.Bold),Primary=true,DialogResult=DialogResult.Yes,AccessibleName=action};
+  Controls.Add(cancel);if(!information)Controls.Add(accept);AcceptButton=cancel;CancelButton=cancel;Shown+=(s,e)=>cancel.Focus();
  }
 }
 

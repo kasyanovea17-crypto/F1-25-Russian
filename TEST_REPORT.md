@@ -1,9 +1,11 @@
-# Проверки0.31
+﻿# Additional launcher checks
 
-Результаты итоговой сборки записываются в dist/release-ci-result.json.
+UI_TEST_PASS checks=187 real_game_writes=false
+SPEECH_UI_PASS checks=48 host_calls=0 game_writes=false registry_writes=false
+MAX_VOICE_UI_PASS checks=36 host_calls=0 game_writes=false registry_writes=false
 
-- Сравнение фраз меню:37команд/104записи;33видимые подписи совпадают с обеими версиями текста и legacyпрофилями.
-- Акустический тест установленным русским движком:208/208 в5контекстах и2английских локалях, без микрофона.
-- Тестовая озвучка:192замены;2646остальных звуков сохранены побайтно.
--18записей озвучки отмечены для прослушивания; игровое воспроизведение не объявляется проверенным.
-- Установка/откат проверяются только на изолированных копиях; CI не обращается к установленной игре.
+- Baseline reproduces startup-language mismatch, keyboard targets behind dialogs and hidden path error.
+- Corrected state audit:80 checks,0 findings.
+- Single-EXE launch-directory hint tested separately from compatibility, and end-to-end in the wrapper.
+- Engine, text, fonts, compatibility profiles and voice hosts unchanged.
+- No game launch, real game/registry writes, or screenshot-capture workaround.

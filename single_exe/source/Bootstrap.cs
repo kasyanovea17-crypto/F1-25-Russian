@@ -120,6 +120,7 @@ internal static class Bootstrap {
   string entry=BundleRules.Inside(cache,m.entryPoint);BundleRules.RealPath(entry);BundleRules.Need(BundleRules.HashFile(entry)==m.files.Single(f=>f.path==m.entryPoint).sha256,"Лаунчер изменён перед запуском.");
   string arguments=String.Join(" ",args.Select(BundleRules.Quote).ToArray());var start=new ProcessStartInfo(entry,arguments){WorkingDirectory=cache,UseShellExecute=false,CreateNoWindow=args.Length>0,WindowStyle=args.Length>0?ProcessWindowStyle.Hidden:ProcessWindowStyle.Normal};
   start.EnvironmentVariables["F1RU_SINGLE_EXE"]="1";start.EnvironmentVariables["F1RU_BUNDLE_VERSION"]=m.version;
+  start.EnvironmentVariables["F1RU_LAUNCH_DIRECTORY"]=Path.GetDirectoryName(Application.ExecutablePath);
   using(var process=Process.Start(start)){BundleRules.Need(process!=null,"Процесс лаунчера не создан.");process.WaitForExit();return process.ExitCode;}
  }
  [STAThread]internal static int Main(string[] args){

@@ -1,0 +1,22 @@
+{
+  "result": "PASS",
+  "independent_assertions": 18,
+  "variants": [
+    {
+      "variant": "russian",
+      "path": "source-reference/language-1.20.lng",
+      "sha256": "3e56c403b275820c3280ffe891a35aeb8af09a7c819bebf78b6ad807698139d1",
+      "records": 55991,
+      "structure_only_value_offsets_and_pool_changed": true
+    },
+    {
+      "variant": "original_names",
+      "path": "source-reference/language-1.20-original-names.lng",
+      "sha256": "94243c12574791927ff44cf6627f7a3a8b58a059db40ff6266e45fa788eb312a",
+      "records": 55991,
+      "structure_only_value_offsets_and_pool_changed": true
+    }
+  ],
+  "game_writes": 0,
+  "source_exe_executed": false
+}
