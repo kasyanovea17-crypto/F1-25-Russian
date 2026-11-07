@@ -13,3 +13,6 @@ evidence/
 
 evidence/
 *.build/
+
+# Build and fixture evidence is local-only.
+artifacts/

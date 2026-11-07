@@ -185,7 +185,8 @@ try{
  RecoverPending
  $protected=@{}
  foreach($p in $profile.protected.PSObject.Properties){$h=Hash (Inside $p.Name);if($h -notin @($p.Value)){
-  if(!$profile.micro_compatibility -or !(ValidPublisher (Inside $p.Name) $profile.micro_compatibility.publisher_organization)){throw ('Подпись обновлённого файла не прошла проверку: '+$p.Name)}
+  if(!$profile.micro_compatibility){throw ('Файл не соответствует профилю совместимости; исходный файл сохранён: '+$p.Name)}
+  if(!(ValidPublisher (Inside $p.Name) $profile.micro_compatibility.publisher_organization)){throw ('Подпись обновлённого файла не прошла проверку: '+$p.Name)}
   if($p.Name -eq 'F1_25.exe' -and !(HeaderCompatible $profile (Inside $p.Name))){throw 'Индекс игровых ресурсов изменён.'}
   Write-Output ('COMPATIBILITY PASS; обновлённый подписанный файл сохранён: '+$p.Name)
  };$protected[$p.Name]=$h}

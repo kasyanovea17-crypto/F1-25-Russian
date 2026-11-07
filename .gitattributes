@@ -1,3 +1,8 @@
 * text=auto
 audio/payload/* -text
 *.delta -text
+
+# Exact runtime bytes are authenticated by EngineerVoiceUI and the audio manifest.
+audio/engineer/*.cs -text
+audio/engineer/*.ps1 -text
+audio/engineer/payload/* -text

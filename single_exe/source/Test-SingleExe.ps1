@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
  [Parameter(Mandatory=$true)][string]$PackageDirectory,
  [Parameter(Mandatory=$true)][string]$WorkDirectory,
@@ -28,7 +28,7 @@ $exe=Join-Path $output 'SingleExeFixture.exe'
 if($LASTEXITCODE-ne0){throw 'Fixture wrapper compilation failed.'}
 $build=Join-Path $output 'SingleExeFixture.build';$unit=Join-Path $output 'BootstrapTests.exe'
 $common=@('/nologo','/target:exe','/platform:x64','/warn:4','/warnaserror+','/reference:System.Core.dll','/reference:System.Windows.Forms.dll','/reference:System.Web.Extensions.dll','/reference:System.IO.Compression.dll','/reference:System.IO.Compression.FileSystem.dll',('/resource:'+(Join-Path $build 'bundle.zip')+',F1RU.Bundle.zip'),('/resource:'+(Join-Path $build 'bundle.json')+',F1RU.Bundle.json'))
-$sources=@((Join-Path $PSScriptRoot 'Bootstrap.cs'),(Join-Path $PSScriptRoot 'BundleContract.cs'),(Join-Path $build 'BundlePins.cs'))
+$sources=@((Join-Path $PSScriptRoot 'Bootstrap.cs'),(Join-Path $PSScriptRoot 'BundleContract.cs'),(Join-Path $PSScriptRoot '..\..\StartupDiagnostics.cs'),(Join-Path $build 'BundlePins.cs'))
 & $csc @common /main:BootstrapTests ('/out:'+$unit) @sources (Join-Path $tests 'BootstrapTests.cs')
 if($LASTEXITCODE-ne0){throw 'Unit test compilation failed.'}
 foreach($phase in @('baseline','suite','rollback')){

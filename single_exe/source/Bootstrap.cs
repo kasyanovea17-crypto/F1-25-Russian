@@ -72,9 +72,21 @@ internal static class Bootstrap {
   BundleRules.Need(currentManifest==BundleRules.HashFile(oldManifest)||currentManifest==BundleRules.HashFile(newManifest),"Текущее описание не принадлежит прерванному обновлению.");
   BundleRules.Need(currentLanguage==BundleRules.HashFile(oldLng)||currentLanguage==BundleRules.HashFile(newLng),"Текущий перевод не принадлежит прерванному обновлению.");
  }
- internal static void ValidateDirectory(string directory,BundleManifest m){
+ internal static string MissingFileMessage(string relative,string path){
+  return "Файл комплекта отсутствует: "+relative+"\nПуть: "+path+"\nПовторите запуск. Если EXE снова исчезает, проверьте журнал защиты Windows или антивируса.";
+ }
+ internal static void ValidateDirectory(string directory,BundleManifest m){InspectDirectory(directory,m,false);}
+ internal static List<BundleFile> InspectDirectory(string directory,BundleManifest m,bool allowMissingImmutable){
+  var missing=new List<BundleFile>();
   BundleRules.RealPath(directory);var expected=FileMap(m);long total=0;int count=0;
-  foreach(var f in m.files){string path=BundleRules.Inside(directory,f.path);BundleRules.RealPath(path);BundleRules.Need(File.Exists(path),"Файл комплекта отсутствует: "+f.path);
+  foreach(var f in m.files){string path=BundleRules.Inside(directory,f.path);BundleRules.RealPath(path);FileAttributes attributes=0;bool absent=false;
+   try{attributes=File.GetAttributes(path);}catch(FileNotFoundException){absent=true;}catch(DirectoryNotFoundException){absent=true;}
+   if(absent){
+    bool mutable=m.textUpdates&&(f.path=="manifest.json"||f.path=="payload/language.lng");
+    if(allowMissingImmutable&&!mutable){missing.Add(f);continue;}
+    throw new InvalidDataException(MissingFileMessage(f.path,path));
+   }
+   BundleRules.Need((attributes&(FileAttributes.Directory|FileAttributes.ReparsePoint))==0,"Вместо файла комплекта обнаружена папка или ссылка: "+f.path);
    if(m.textUpdates&&(f.path=="manifest.json"||f.path=="payload/language.lng"))continue;
    BundleRules.Need(new FileInfo(path).Length==f.bytes&&BundleRules.HashFile(path)==f.sha256,"Файл комплекта изменён: "+f.path+". Существующие данные сохранены.");
   }
@@ -89,6 +101,7 @@ internal static class Bootstrap {
    if(File.Exists(Path.Combine(directory,"update-pending.json")))ValidatePending(directory,original,language);
    else ValidateTextPair(directory,Path.Combine(directory,"manifest.json"),Path.Combine(directory,"payload","language.lng"),original,language);
   }
+  return missing;
  }
  internal static IEnumerable<string> TreeFiles(string root){
   var directories=new Stack<string>();directories.Push(root);int count=0;
@@ -107,10 +120,30 @@ internal static class Bootstrap {
   string full=Path.GetFullPath(directory),basePath=Path.GetFullPath(parent);BundleRules.Need(Path.GetDirectoryName(full).Equals(basePath,StringComparison.OrdinalIgnoreCase)&&Regex.IsMatch(Path.GetFileName(full),"\\A\\.stage-[a-f0-9]{32}\\z"),"Неверная временная папка.");
   if(!Directory.Exists(full))return;BundleRules.RealPath(full);foreach(string item in TreeFiles(full))BundleRules.RealPath(item);Directory.Delete(full,true);
  }
+ // Recover only absent immutable files; reject any present mismatch before the first write.
+ internal static void EnsureCache(string cache,BundleManifest m){
+  var missing=InspectDirectory(cache,m,true);if(missing.Count==0)return;
+  string parent=Path.GetDirectoryName(Path.GetFullPath(cache));BundleRules.RealPath(parent);
+  string stage=Path.Combine(parent,".stage-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(stage);
+  try{
+   using(var source=Resource(ArchiveResource))Extract(source,m,stage);ValidateDirectory(stage,m);
+   // Recheck after staging: text updates and existing files must still be valid.
+   missing=InspectDirectory(cache,m,true);
+   foreach(var file in missing){
+    string source=BundleRules.Inside(stage,file.path),target=BundleRules.Inside(cache,file.path);BundleRules.RealPath(target);
+    Directory.CreateDirectory(Path.GetDirectoryName(target));BundleRules.RealPath(target);
+    // Move has no overwrite mode: a concurrent appearance is an error, never a replacement.
+    File.Move(source,target);
+    BundleRules.Need(File.Exists(target),MissingFileMessage(file.path,target));
+    BundleRules.Need(new FileInfo(target).Length==file.bytes&&BundleRules.HashFile(target)==file.sha256,"Восстановленный файл комплекта не прошёл проверку: "+file.path);
+   }
+   ValidateDirectory(cache,m);
+  }finally{DeleteStage(stage,parent);}
+ }
  internal static string Prepare(BundleManifest m){
   string parent=CacheParent(),name=m.version+"-"+m.archiveSha256,cache=Path.Combine(parent,name);BundleRules.RealPath(cache);
   using(var gate=Acquire(Path.Combine(parent,name+".lock"))){
-   if(Directory.Exists(cache)){ValidateDirectory(cache,m);return cache;}
+   if(Directory.Exists(cache)){EnsureCache(cache,m);return cache;}
    string stage=Path.Combine(parent,".stage-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(stage);
    try{using(var source=Resource(ArchiveResource))Extract(source,m,stage);ValidateDirectory(stage,m);Directory.Move(stage,cache);ValidateDirectory(cache,m);return cache;}
    finally{DeleteStage(stage,parent);}
@@ -130,7 +163,7 @@ internal static class Bootstrap {
    return Launch(cache,m,args);
   }catch(Exception ex){
    if(test){try{File.WriteAllText(Path.GetFullPath(args[1]),BundleRules.Json.Serialize(new{status="FAIL",error=ex.ToString(),gameModified=false,registryModified=false}),new UTF8Encoding(false));}catch(IOException){}catch(UnauthorizedAccessException){}}
-   else if(args.Length==0)MessageBox.Show("Операция не завершена. Существующие файлы сохранены.\n\n"+ex.Message,"F1 25 на русском",MessageBoxButtons.OK,MessageBoxIcon.Error);
+   else if(args.Length==0)MessageBox.Show("Операция не завершена. Существующие файлы сохранены.\n\n"+StartupDiagnostics.Message(ex),"F1 25 на русском",MessageBoxButtons.OK,MessageBoxIcon.Error);
    try{Console.Error.WriteLine(ex);}catch(IOException){}return 1;
   }
  }

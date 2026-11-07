@@ -1,6 +1,6 @@
 {
   "schema": 24,
-  "version": "0.32",
+  "version": "0.33",
   "previous_lng": [
     "8b39a89c1b88a7b4fead950e5ade103e4f0905ac38d19bb41376575488dd3347",
     "d4c577bdc47540bd32f17c5f63045afd92445d41cad1cd9ddce4150e940db78d",
@@ -338,7 +338,9 @@
         ],
         "EAAntiCheat.GameServiceLauncher.exe": [
           "ad4b0709d9669f0d95e9c3c9b6b5ae8761f63bb7b7eff130b641eceae734b377",
-          "bf75213a80d9bcd9d22d0f081ed7ee775cf8e34c6a13407047a75e8c4a319241"
+          "bf75213a80d9bcd9d22d0f081ed7ee775cf8e34c6a13407047a75e8c4a319241",
+          "7f18801344a49dff2b3bc9cd818ea1a0a6cc50b63d4bcfa68fd62047cadc7d55",
+          "63304b515dc5bfd95d23756053b839cb720955ec820af12530f99fa6e6f9a0c6"
         ],
         "EAAntiCheat.cfg": [
           "a470ffdb8b308a896eea300fa0224940ee3d3df1bd7c277a94402ad91d6530f5"
