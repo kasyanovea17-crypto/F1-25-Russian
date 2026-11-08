@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param([switch]$PackageOnly)
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
@@ -6,7 +6,7 @@ Import-Module (Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Utility\Microsoft
 Import-Module (Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Management\Microsoft.PowerShell.Management.psd1') -ErrorAction Stop
 [Console]::OutputEncoding=New-Object Text.UTF8Encoding($false)
 $r=[IO.Path]::GetFullPath($PSScriptRoot)
-$version='0.33'
+$version='0.33.1'
 $out=Join-Path $r ('dist\F1_25_RU_v'+$version)
 $exe=Join-Path $r ('dist\F1_25_RU_v'+$version+'.exe')
 $allow=Join-Path $r '.release\package-v0.33.txt'
@@ -17,8 +17,8 @@ function Relative([string]$name){
  foreach($part in $name.Split('/')){Need ($part.Length-gt0-and$part-ne'.'-and$part-ne'..'-and-not$part.EndsWith('.')-and-not$part.EndsWith(' ')-and$part.IndexOfAny([IO.Path]::GetInvalidFileNameChars())-lt0-and-not$part.Contains(':')) 'Invalid package component.'}
  return $name
 }
-Need ([IO.File]::Exists($allow)) 'Missing explicit v0.33 package allowlist.'
-Need (-not [IO.Directory]::Exists($out)-and-not[IO.File]::Exists($exe)) 'Preserve existing outputs; build v0.33 in a fresh checkout.'
+Need ([IO.File]::Exists($allow)) 'Missing explicit v0.33.1 package allowlist.'
+Need (-not [IO.Directory]::Exists($out)-and-not[IO.File]::Exists($exe)) 'Preserve existing outputs; build v0.33.1 in a fresh checkout.'
 $names=@([IO.File]::ReadAllLines($allow)|Where-Object{-not[string]::IsNullOrWhiteSpace($_)})
 Need ($names.Count-ge50-and$names.Count-le4096) 'Expected the reviewed base package plus explicit optional voice files.'
 $seen=New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
@@ -33,7 +33,7 @@ foreach($name in $names){
  $to=Join-Path $out $name.Replace('/','\');[void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($to));Copy-Item -LiteralPath $source -Destination $to
 }
 $m=Get-Content -LiteralPath (Join-Path $out 'manifest.json') -Raw -Encoding UTF8|ConvertFrom-Json
-Need ($m.version-eq$version) 'Manifest launcher version differs from v0.33.'
+Need ($m.version-eq$version) 'Manifest launcher version differs from v0.33.1.'
 Need ($m.text_version-eq'0.15.6') 'Stable text version changed unexpectedly.'
 foreach($field in $m.payload.PSObject.Properties){Need ($field.Name-match'^[a-zA-Z0-9._-]+$') 'Invalid payload name.';Need ((Hash (Join-Path $out ('payload\'+$field.Name)))-ceq$field.Value) ('Payload hash differs: '+$field.Name)}
 $csc=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
@@ -48,7 +48,7 @@ Need ($process.ExitCode-eq0) 'Native launcher self-test failed.'
 Get-Content -LiteralPath $result
 $sums=@($names|Where-Object{$_-ne'SHA256SUMS.txt'}|ForEach-Object{(Hash (Join-Path $out $_.Replace('/','\')))+'  '+$_})
 [IO.File]::WriteAllLines((Join-Path $out 'SHA256SUMS.txt'),$sums,(New-Object Text.UTF8Encoding($false)))
-Write-Output ('PACKAGE_STAGE_PASS launcher=0.33 files='+$names.Count+' profiles=1.18,1.20,1.24,1.26 game_writes=0')
+Write-Output ('PACKAGE_STAGE_PASS launcher=0.33.1 files='+$names.Count+' profiles=1.18,1.20,1.24,1.26 game_writes=0')
 if($PackageOnly){return}
 & (Join-Path $r 'single_exe\source\Build-SingleExe.ps1') -PackageDirectory $out -OutputExe $exe -Version $version -AllowList $allow -EnableTextUpdates
 Need ($LASTEXITCODE-eq0) 'Single EXE build failed.'

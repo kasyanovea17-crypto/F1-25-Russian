@@ -29,9 +29,12 @@ function AtomicJson($Value,[string]$Path){
  [void](Checked $Path);$temp=$Path+'.'+[guid]::NewGuid().ToString('N')+'.tmp';$old=$temp+'.previous'
  try{[IO.File]::WriteAllText($temp,($Value|ConvertTo-Json -Depth 20 -Compress),$utf8);if([IO.File]::Exists($Path)){[IO.File]::Replace($temp,$Path,$old);[IO.File]::Delete($old)}else{[IO.File]::Move($temp,$Path)}}finally{if([IO.File]::Exists($temp)){[IO.File]::Delete($temp)}}
 }
+function Get-RunningGameProcesses{
+ Get-Process -ErrorAction Stop | Where-Object { @('F1_25','F1_25_dx12') -icontains $_.ProcessName }
+}
 function GameClosed{
  if($fixture){Need (-not [IO.File]::Exists((Join-Path $FixtureRoot 'game.running'))) 'Закройте F1 25 перед изменением озвучки.';return}
- Need (@(Get-Process -ErrorAction SilentlyContinue|Where-Object{$_.ProcessName -like 'F1_25*'}).Count -eq 0) 'Закройте F1 25 перед изменением озвучки.'
+ Need (@(Get-RunningGameProcesses).Count -eq 0) 'Закройте F1 25 перед изменением озвучки.'
 }
 function Target([string]$Name){Need ($Name -cin $bankNames) 'Неизвестный аудиобанк.';return Checked (Join-Path $game ('audio\2025\speech\'+$Name))}
 function Backup($S,[string]$Name){Need ($S.transaction -cmatch '^[0-9a-f]{32}$') 'Неверный номер резервной копии.';return Checked (Join-Path (Join-Path (Join-Path $installDir 'transactions') $S.transaction) ('before-'+$Name))}
@@ -75,10 +78,10 @@ try{
  foreach($name in $bankNames){Need ([IO.File]::Exists((Target $name))) ('Не найден английский аудиобанк инженера: '+$name)}
  $identity=HashText $game.ToUpperInvariant()
  if($fixture){$FixtureRoot=Checked $FixtureRoot;Need (Within $game $FixtureRoot) 'Проверочная игра должна находиться в FixtureRoot.';Need ([IO.File]::ReadAllText((Join-Path $game 'F1_25.exe'),$utf8) -ceq "INERT ENGINEER VOICE TEST FIXTURE - NEVER EXECUTE`n") 'Проверочный режим требует инертный EXE-маркер; настоящая игра отклонена.';$stateRoot=Checked (Join-Path $FixtureRoot 'state');$running=[IO.File]::Exists((Join-Path $FixtureRoot 'game.running'))}
- else{$stateRoot=Checked (Join-Path $env:ProgramData 'Karsvein\F1EngineerVoice');$running=@(Get-Process -ErrorAction SilentlyContinue|Where-Object{$_.ProcessName-like 'F1_25*'}).Count-gt 0}
+ else{$stateRoot=Checked (Join-Path $env:ProgramData 'Karsvein\F1EngineerVoice');$running=@(Get-RunningGameProcesses).Count-gt 0}
  $installDir=Checked (Join-Path (Join-Path $stateRoot 'installations') $identity);$stateFile=Checked (Join-Path $installDir 'state.json')
  $mutate=$Action-cin @('russian','english','restore')
- if($mutate){GameClosed;if(-not $fixture){$principal=New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent());Need ($principal.IsInRole('Administrator')) 'Для изменения озвучки нужно подтверждение Windows.'};[void][IO.Directory]::CreateDirectory($installDir);$lock=[IO.File]::Open((Checked (Join-Path $installDir '.lock')),'OpenOrCreate','ReadWrite','None')}
+ if($mutate){GameClosed;if(-not $fixture){$principal=New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent());Need ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) 'Для изменения озвучки нужно подтверждение Windows.'};[void][IO.Directory]::CreateDirectory($installDir);$lock=[IO.File]::Open((Checked (Join-Path $installDir '.lock')),'OpenOrCreate','ReadWrite','None')}
  $core=Checked (Join-Path $PackageRoot 'EngineerNefs.cs');Need ((Hash $core)-ceq $coreHash) 'Модуль аудиобанков не прошёл проверку. Переоткройте исходный EXE лаунчера.'
  Add-Type -Path $core -ReferencedAssemblies System.Web.Extensions
  [EngineerNefs]::Configure((Checked (Join-Path $PackageRoot 'payload\engineer-voices.json')),(Checked (Join-Path $PackageRoot 'payload\engineer-voices.bin')),$manifestHash,$literalHash)

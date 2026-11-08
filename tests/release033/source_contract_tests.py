@@ -35,7 +35,7 @@ def main():
 
     manifest_path = ROOT / 'manifest.base.json'
     manifest = json.loads(manifest_path.read_text('utf-8-sig'))
-    check(manifest['version'] == '0.33', 'manifest version033')
+    check(manifest['version'] == '0.33.1', 'manifest version033')
     matching = [p for p in manifest['native_profiles'] if p['exe_sha256'] == STEAM_EXE]
     check(len(matching) == 1 and matching[0]['game_version'] == '1.26' and
           matching[0].get('platform', 'steam') == 'steam', 'one exact Steam126 profile')
@@ -103,7 +103,7 @@ Write-Output ('PROTECTED_GUARD_FIXTURES_PASS checks='+$checks+' matrix_cases=48 
     check(result.returncode == 0 and 'PROTECTED_GUARD_FIXTURES_PASS checks=66 matrix_cases=48' in result.stdout,
           'actual guard pure fixture matrix')
     launcher = (ROOT / 'Launcher.cs').read_text('utf-8-sig')
-    check('Text="F1 25 · На русском · 0.33 · новый интерфейс"' in launcher, 'UI release version')
+    check('Text="F1 25 · На русском · 0.33.1 · новый интерфейс"' in launcher, 'UI release version')
     check('"Голос инженера · выбор озвучки"' in launcher and 'engineerVoiceButton.Click+=(a,e)=>ShowEngineerVoiceChild();' in launcher,
           'engineer choice exposed')
     child = launcher[launcher.index(' void ShowEngineerVoiceChild(){'):launcher.index('\n void RefreshVoice()', launcher.index(' void ShowEngineerVoiceChild(){'))]
