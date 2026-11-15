@@ -11,7 +11,8 @@ OLD_ENGINE_NORMALIZED_SHA = 'd1ffd297abd0f96d2aaf4fc860477eb379c5fcb461571cf4641
 OLD_MANIFEST_CANONICAL_SHA = 'cb6b9c2c247e6580204496a97ee318f1464e087ac82cfbfc637dbca318e31dad'
 STEAM_EXE = 'd873a1c8d2044cef2fd76c99c9d5a97649c5b815d055540995105f46619865ae'
 EA_REVISIONS = ['7f18801344a49dff2b3bc9cd818ea1a0a6cc50b63d4bcfa68fd62047cadc7d55',
-                '63304b515dc5bfd95d23756053b839cb720955ec820af12530f99fa6e6f9a0c6']
+                '63304b515dc5bfd95d23756053b839cb720955ec820af12530f99fa6e6f9a0c6',
+                'b8c1df3cd45f362df88c5a5aa3aeca23e06be1a48c09b292bede7aedf2d87a0d']
 
 
 def digest(value):
@@ -40,7 +41,7 @@ def main():
     check(len(matching) == 1 and matching[0]['game_version'] == '1.26' and
           matching[0].get('platform', 'steam') == 'steam', 'one exact Steam126 profile')
     approved = matching[0]['protected']['EAAntiCheat.GameServiceLauncher.exe']
-    check(all(approved.count(h) == 1 for h in EA_REVISIONS), 'two explicit audited component revisions')
+    check(all(approved.count(h) == 1 for h in EA_REVISIONS), 'three explicit audited component revisions')
     for profile in manifest['native_profiles']:
         if profile is matching[0]:
             continue

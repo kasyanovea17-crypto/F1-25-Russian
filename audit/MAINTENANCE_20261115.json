@@ -1,0 +1,120 @@
+{
+  "schema": 1,
+  "kind": "maintenance_compatibility_audit",
+  "date": "2026-11-15",
+  "launcher_version": "0.33.2",
+  "game_version": "1.26",
+  "steam_build": "25251167",
+  "depot": 3893181,
+  "previous_manifest": "4405530693997782804",
+  "new_manifest": "7156643601074507961",
+  "observed_changed_files": [
+    {
+      "name": "EAAntiCheat.GameServiceLauncher.dll",
+      "previous": {
+        "bytes": 52486904,
+        "sha1": "594c41c709d50a4d17b108b37cd901746cb2483c"
+      },
+      "updated": {
+        "bytes": 53357816,
+        "sha1": "6a74f332ef0d3dd865c92e6fbea9e8f15cda3c59"
+      },
+      "current": {
+        "bytes": 53357816,
+        "sha1": "6a74f332ef0d3dd865c92e6fbea9e8f15cda3c59"
+      },
+      "sha256": "f8b5d82db195760328e3926da9ab5059e6b779df0d7f02892f5ffcfa46b56ae6",
+      "changed": true,
+      "matches_steam": true
+    },
+    {
+      "name": "EAAntiCheat.GameServiceLauncher.exe",
+      "previous": {
+        "bytes": 20880632,
+        "sha1": "2e5235a10000f8c33c18a431c0608cf7d2dd6bb8"
+      },
+      "updated": {
+        "bytes": 20724984,
+        "sha1": "756e3f0464de621f8c11db4aba88b6d5456eb4ad"
+      },
+      "current": {
+        "bytes": 20724984,
+        "sha1": "756e3f0464de621f8c11db4aba88b6d5456eb4ad"
+      },
+      "sha256": "b8c1df3cd45f362df88c5a5aa3aeca23e06be1a48c09b292bede7aedf2d87a0d",
+      "changed": true,
+      "matches_steam": true
+    },
+    {
+      "name": "EAAntiCheat.Installer.exe",
+      "previous": {
+        "bytes": 287446776,
+        "sha1": "29d85c92ad18b7ec332ad86a6e7261ffc420d59e"
+      },
+      "updated": {
+        "bytes": 324157176,
+        "sha1": "03a8c6537d830eb44d371bf657a5ee4003d91ee4"
+      },
+      "current": {
+        "bytes": 324157176,
+        "sha1": "03a8c6537d830eb44d371bf657a5ee4003d91ee4"
+      },
+      "sha256": "4713be86a5e749a2cab120c5133d08f068963d533a830933e6f5a869d1d92d47",
+      "changed": true,
+      "matches_steam": true
+    },
+    {
+      "name": "EAJavelinInstaller_installscript.vdf",
+      "previous": {
+        "bytes": 769,
+        "sha1": "c307630335ca1be751e6c2c0200756dda6968fbc"
+      },
+      "updated": {
+        "bytes": 769,
+        "sha1": "763450dcb3ae49117f63a956f23228f28e94c833"
+      },
+      "current": {
+        "bytes": 769,
+        "sha1": "763450dcb3ae49117f63a956f23228f28e94c833"
+      },
+      "sha256": "79db4eecb5955395e53e90aeeaeba0bb20059ff0a213e52d157b0a86c40289a6",
+      "changed": true,
+      "matches_steam": true
+    },
+    {
+      "name": "preloader_l.dll",
+      "previous": {
+        "bytes": 46840,
+        "sha1": "1b3a984142c9b893c6cbe5e32c8bdf606bcae6ce"
+      },
+      "updated": {
+        "bytes": 46840,
+        "sha1": "621ba687dc6c201734d3045aa8d04cd1cd6e437c"
+      },
+      "current": {
+        "bytes": 46840,
+        "sha1": "621ba687dc6c201734d3045aa8d04cd1cd6e437c"
+      },
+      "sha256": "14a6f1ad687896d913672900427157978f85434aa311b4051561044468eae4e2",
+      "changed": true,
+      "matches_steam": true
+    }
+  ],
+  "ea_authenticode": "4 of 4 Valid; Electronic Arts, Inc.",
+  "added_exact_launcher_sha256": "b8c1df3cd45f362df88c5a5aa3aeca23e06be1a48c09b292bede7aedf2d87a0d",
+  "game_exe_sha256": "d873a1c8d2044cef2fd76c99c9d5a97649c5b815d055540995105f46619865ae",
+  "installed_dat_sha256": "5dacafc79e43afe24a3f283a8f8368a323cf0b6731f91007635cf55dfafa38d9",
+  "engineer_selected_russian": 1596,
+  "language_records": 56134,
+  "existing_release_prepare": "PASS through valid publisher rule",
+  "candidate_prepare": "PASS through audited exact revision",
+  "rollback": "isolated copy returned to exact baseline package and behavior",
+  "ci": "PASS",
+  "game_writes": 0,
+  "registry_writes": 0,
+  "runtime_playback_verified": false,
+  "v1_27_supported": false,
+  "v1_27_announced_release_utc": "2026-11-16T10:00:00Z",
+  "official_patch_notes": "https://www.ea.com/games/f1/f1-25/news/f1-25-2026-season-pack-patch-notes-v127",
+  "published": false
+}
