@@ -14,6 +14,7 @@ $model='SR_MS_ru-RU_TELE_11.0'
 $script:present=$false
 $script:running=$false
 $script:lock=$null
+$script:msiLease=$null
 function Finish([string]$Status,[string]$Code,[string]$Message,[int]$ExitCode,[bool]$Restart=$false){
  [ordered]@{status=$Status;code=$Code;message=$Message;modelInstalled=$script:present;installed=$false;needsRestart=$Restart;gameRunning=$script:running;canInstall=$false;canRestore=$false;commandCount=37;details=@{source=$url;sha256=$expectedHash}}|ConvertTo-Json -Compress -Depth 5|Write-Output
  exit $ExitCode
@@ -61,6 +62,9 @@ try{
    $output.Dispose();$output=$null;VerifiedMsi $part;[IO.File]::Move($part,$msi)
   }finally{if($output){$output.Dispose()};if($input){$input.Dispose()};if($response){$response.Dispose()};if([IO.File]::Exists($part)){[IO.File]::Delete($part)}}
  }
+ # Keep the exact verified package immutable until Windows Installer returns.
+ # This permits installer reads but prevents replacement, writes and deletion.
+ $script:msiLease=[IO.File]::Open($msi,'Open','Read','Read')
  VerifiedMsi $msi
  $script:running=@(Get-Process -Name F1_25 -ErrorAction SilentlyContinue).Count -gt 0
  if($script:running){Finish 'not_ready' 'game_running' 'Игра запущена во время загрузки. Закройте её и повторите установку.' 2}
@@ -70,4 +74,4 @@ try{
  $script:present=ModelPresent
  if(-not $script:present){throw 'Установщик завершился, но русская модель не найдена.'}
  Finish 'ready' 'model_installed' 'Русская модель установлена. Теперь включите голосовые команды.' 0 ($p.ExitCode -eq 3010)
-}catch{Finish 'error' 'model_error' $_.Exception.Message 1}finally{if($script:lock){$script:lock.Dispose()}}
+}catch{Finish 'error' 'model_error' $_.Exception.Message 1}finally{if($script:msiLease){$script:msiLease.Dispose()};if($script:lock){$script:lock.Dispose()}}

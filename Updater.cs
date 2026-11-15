@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -12,7 +12,7 @@ using System.Web.Script.Serialization;
 sealed class TextUpdate {
  public const string Repository="https://github.com/kasyanovea17-crypto/F1-25-Russian";
  public const string Channel="https://raw.githubusercontent.com/kasyanovea17-crypto/F1-25-Russian/main/updates/";
- public const string LauncherVersion="0.33.1";
+ public const string LauncherVersion="0.33.2";
  public string Version,Hash,Notes,Url; public int Bytes; public bool Available;
 }
 static class Updates {
@@ -38,11 +38,29 @@ static class Updates {
   }
  }
  static void StableLanguageHash(Dictionary<string,object> manifest,string hash){foreach(var entry in StableLanguageEntries(manifest))entry["sha256"]=hash;}
- static string InstallContract(Dictionary<string,object> manifest){
+ internal static string InstallContract(Dictionary<string,object> manifest){
   var copy=Parse(Json.Serialize(manifest));
   copy.Remove("previous_lng");copy.Remove("lng");copy.Remove("text_version");
   object raw;Require(copy.TryGetValue("payload",out raw)&&raw is Dictionary<string,object>,"Повреждено описание файлов пакета.");
-  ((Dictionary<string,object>)raw).Remove("language.lng");foreach(var entry in StableLanguageEntries(copy))entry.Remove("sha256");return Json.Serialize(copy);
+  ((Dictionary<string,object>)raw).Remove("language.lng");foreach(var entry in StableLanguageEntries(copy))entry.Remove("sha256");return CanonicalContract(copy);
+ }
+ // Deterministic comparison binds profiles, destinations, patches, signer policy
+ // and fixed assets while permitting only the existing text-only update fields.
+ static string CanonicalContract(object value){
+  var dictionary=value as Dictionary<string,object>;
+  if(dictionary!=null){var keys=new List<string>(dictionary.Keys);keys.Sort(StringComparer.Ordinal);var parts=new List<string>();foreach(string key in keys)parts.Add(Json.Serialize(key)+":"+CanonicalContract(dictionary[key]));return "{"+String.Join(",",parts.ToArray())+"}";}
+  if(value is IEnumerable&&!(value is string)){var parts=new List<string>();foreach(object item in (IEnumerable)value)parts.Add(CanonicalContract(item));return "["+String.Join(",",parts.ToArray())+"]";}
+  return Json.Serialize(value);
+ }
+ internal static string InstallContractHash(Dictionary<string,object> manifest){using(var hash=SHA256.Create())return BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(InstallContract(manifest)))).Replace("-","").ToLowerInvariant();}
+ internal static void ValidateMutableText(Dictionary<string,object> manifest,string originalVersion,string originalHash,string[] requiredHistory){
+  object value;if(!manifest.TryGetValue("lng",out value)||!(value is string)||!System.Text.RegularExpressions.Regex.IsMatch((string)value,"^[a-f0-9]{64}$"))throw new InvalidDataException("Неверная сумма перевода.");string hash=(string)value;
+  object raw;Require(manifest.TryGetValue("payload",out raw)&&raw is Dictionary<string,object>,"Неверное описание перевода.");var payload=(Dictionary<string,object>)raw;Require(payload.TryGetValue("language.lng",out value)&&value is string&&(string)value==hash,"Суммы перевода расходятся.");
+  Require(manifest.TryGetValue("text_version",out value)&&value is string&&V((string)value)>=V(originalVersion),"Неверная или устаревшая версия текста.");
+  foreach(var entry in StableLanguageEntries(manifest))Require(entry.TryGetValue("sha256",out value)&&value is string&&(string)value==hash,"Профиль не соответствует тексту.");
+  Require(manifest.TryGetValue("previous_lng",out raw)&&raw is IEnumerable&&!(raw is string),"Неверная история перевода.");var history=new HashSet<string>(StringComparer.Ordinal);int count=0;
+  foreach(object item in (IEnumerable)raw)Require(item is string&&System.Text.RegularExpressions.Regex.IsMatch((string)item,"^[a-f0-9]{64}$")&&++count<=1024&&history.Add((string)item),"История перевода повреждена.");
+  foreach(string required in requiredHistory)Require(history.Contains(required),"История исходного перевода потеряна.");if(hash!=originalHash)Require(history.Contains(originalHash),"Исходная сумма отсутствует в истории обновления.");
  }
  static void WriteTextManifest(string file,Dictionary<string,object> manifest,string contract){
   Require(InstallContract(manifest)==contract,"Обновление изменяет параметры установки. Операция остановлена.");

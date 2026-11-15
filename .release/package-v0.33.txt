@@ -55,3 +55,4 @@ audio/engineer/EngineerVoice.ps1
 audio/engineer/EngineerVoiceHost.ps1
 audio/engineer/payload/engineer-voices.json
 audio/engineer/payload/engineer-voices.bin
+SupportDiagnostics.cs

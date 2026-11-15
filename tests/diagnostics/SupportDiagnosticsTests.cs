@@ -1,0 +1,43 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using System.Web.Script.Serialization;
+internal static class SupportDiagnosticsTests {
+ static int count;
+ static void Check(bool good,string name){if(!good)throw new Exception("FAIL "+name);count++;Console.WriteLine("PASS "+name);}
+ static Dictionary<string,object> Parse(string s){return (Dictionary<string,object>)new JavaScriptSerializer{MaxJsonLength=16777216}.DeserializeObject(s);}
+ static object[] Array(string s){return (object[])new JavaScriptSerializer{MaxJsonLength=16777216}.DeserializeObject(s);}
+ static Dictionary<string,string> Zip(string path){var result=new Dictionary<string,string>();using(var zip=ZipFile.OpenRead(path))foreach(var e in zip.Entries)using(var read=new StreamReader(e.Open()))result[e.FullName]=read.ReadToEnd();return result;}
+ static bool Reject(Action action){try{action();return false;}catch(IOException){return true;}catch(ArgumentException){return true;}}
+ static int Main(string[] args){try{
+  if(args.Length!=1)throw new ArgumentException("Specify a new owned test directory.");string root=Path.GetFullPath(args[0]);if(Directory.Exists(root))throw new IOException("Fixture must be new.");Directory.CreateDirectory(root);
+  string home=Path.Combine(root,"package"),store=Path.Combine(root,"journal"),steam=Path.Combine(root,"steamapps"),game=Path.Combine(steam,"common","F1 25");Directory.CreateDirectory(home);Directory.CreateDirectory(game);File.WriteAllText(Path.Combine(game,"sentinel.txt"),"GAME_UNCHANGED");
+  File.WriteAllText(Path.Combine(home,"manifest.json"),"{\"version\":\"0.33.2\",\"text_version\":\"0.15.6\",\"account\":\"must-not-export\"}");
+  File.WriteAllText(Path.Combine(steam,"appmanifest_3059520.acf"),"\"AppState\" { \"buildid\" \"25251167\" \"MountedConfig\" { \"language\" \"japanese\" } \"UserConfig\" { \"language\" \"english\" } }");
+  SupportDiagnostics.End("disabled",5,"invisible",new Win32Exception(5));Check(!Directory.Exists(store),"disabled_logging_does_not_write");
+  Check(!SupportDiagnostics.Redact(@"C:\Users\Private Name\Documents\x").Contains("Private Name"),"ordinary_profile_path_redacted");
+  Check(!SupportDiagnostics.Redact(@"C:\\Users\\OtherUser\\test.json").Contains("OtherUser"),"json_escaped_profile_path_redacted");
+  Check(!SupportDiagnostics.Redact("hello+test@example.org").Contains("example.org"),"email_redacted");
+  Check(!SupportDiagnostics.Redact("{\"password\":\"a very secret with spaces\"}").Contains("secret with spaces"),"quoted_secret_with_spaces_redacted");
+  Check(!SupportDiagnostics.Redact("{\"message\":\"nested \\\"token\\\":\\\"secret-with-more-words\\\" tail\"}").Contains("secret-with-more-words"),"nested_escaped_credential_redacted");
+  Check(!SupportDiagnostics.Redact("password='two word secret' other").Contains("word secret"),"single_quoted_credential_redacted");
+  Check(!SupportDiagnostics.Redact("access_token=ABCD12345&x=2").Contains("ABCD12345"),"query_token_redacted");
+  Check(!SupportDiagnostics.Redact("Authorization: Bearer XYZ987").Contains("XYZ987"),"authorization_redacted");
+  Check(!SupportDiagnostics.Redact("https://person:mypassword@host/path").Contains("mypassword"),"url_credentials_redacted");
+  Check(!SupportDiagnostics.Redact("ghp_abcdefghijklmnopqrstuvwxyz").Contains("ghp_"),"github_credential_redacted");
+  SupportDiagnostics.InitializeForTests(home,store);string op=SupportDiagnostics.Begin("engineer","russian",game);SupportDiagnostics.Stage(op,"host-launch","UAC request");SupportDiagnostics.End(op,0,"{\"path\":\"C:\\\\Users\\\\OtherUser\\\\x\",\"runtimePlaybackVerified\":false}",new Win32Exception(1223,"cancelled"));
+  string journal=Path.Combine(store,"events.json");Check(File.Exists(journal),"history_persisted");var events=Array(File.ReadAllText(journal));Check(events.Length==3,"three_operation_events");var end=(Dictionary<string,object>)events[2];Check((string)end["component"]=="engineer"&&(string)end["action"]=="russian","context_inherited");Check((string)end["lastStage"]=="host-launch","last_stage_preserved");Check((int)end["exitCode"]==0&&(bool)end["failed"],"exception_with_exit_zero_is_failure");Check((int)end["nativeErrorCode"]==1223&&end.ContainsKey("hResult"),"native_exception_metadata");Check(!File.ReadAllText(journal).Contains("OtherUser"),"persisted_raw_json_redacted");
+  SupportDiagnostics.InitializeForTests(home,store);string output=SupportDiagnostics.Export(Path.Combine(root,"report.zip"),home,game,"user=test@example.org password=hidden");var zip=Zip(output);Check(zip.Count==3&&zip.ContainsKey("SUMMARY.txt")&&zip.ContainsKey("REPORT.json")&&zip.ContainsKey("EVENTS.json"),"zip_contract");Check(Array(zip["EVENTS.json"]).Length==3,"history_survives_restart");var report=Parse(zip["REPORT.json"]);Check(report["lastFailure"]!=null,"last_failure_survives_restart");Check((string)report["actualPlaybackLanguage"]=="not_measured"&&!(bool)report["runtimePlaybackVerified"],"playback_not_inferred");Check((string)report["antivirusVerdict"]=="not_obtained","av_not_inferred");
+  var gameInfo=(Dictionary<string,object>)report["game"];var steamInfo=(Dictionary<string,object>)gameInfo["steam"];Check((string)steamInfo["configuredLanguage"]=="english","steam_userconfig_only");Check((string)steamInfo["buildid"]=="25251167","steam_build_read");var package=(Dictionary<string,object>)report["package"];var versions=(Dictionary<string,object>)package["manifestVersions"];Check((string)versions["version"]=="0.33.2","version_from_manifest");Check(!zip["REPORT.json"].Contains("must-not-export"),"manifest_sensitive_unlisted_fields_omitted");Check(zip["SUMMARY.txt"].Contains("Этап сбоя: host-launch")&&zip["SUMMARY.txt"].Contains("Код Windows: 1223"),"human_summary_labels");Check(!String.Join("\n",zip.Values.ToArray()).Contains("test@example.org")&&!String.Join("\n",zip.Values.ToArray()).Contains("password=hidden"),"export_log_redacted");Check(File.ReadAllText(Path.Combine(game,"sentinel.txt"))=="GAME_UNCHANGED"&&Directory.GetFiles(game).Length==1,"game_directory_unchanged");
+  Check(Reject(delegate{SupportDiagnostics.Export(output,home,game,"");}),"existing_export_not_overwritten");Check(Reject(delegate{SupportDiagnostics.Export(Path.Combine(game,"bad.zip"),home,game,"");}),"game_destination_rejected");Check(!File.Exists(Path.Combine(game,"bad.zip")),"game_rejection_no_write");Check(Reject(delegate{SupportDiagnostics.Export(Path.Combine(home,"bad.zip"),home,game,"");}),"package_destination_rejected");Check(Reject(delegate{SupportDiagnostics.Export(Path.Combine(store,"bad.zip"),home,game,"");}),"journal_destination_rejected");Check(Reject(delegate{SupportDiagnostics.Export(@"\\invalid-host\share\bad.zip",home,game,"");}),"remote_destination_rejected_without_probe");
+  var missing=Zip(SupportDiagnostics.Export(Path.Combine(root,"missing-game.zip"),home,Path.Combine(root,"missing"),""));Check((string)((Dictionary<string,object>)Parse(missing["REPORT.json"])["game"])["status"]=="error","missing_game_partial_report");
+  for(int i=0;i<170;i++){string id=SupportDiagnostics.Begin("test","bounded",game);SupportDiagnostics.End(id,1,new string('\u044f',12000),new Exception(new string('\u044f',12000)));}Check(new FileInfo(journal).Length<=4194304,"utf8_history_bounded");Check(Array(File.ReadAllText(journal)).Length<=160,"event_count_bounded");
+  File.WriteAllText(journal,"broken-json");SupportDiagnostics.InitializeForTests(home,store);string recovered=SupportDiagnostics.Begin("test","recovery",game);SupportDiagnostics.End(recovered,0,"ok",null);Check(Array(File.ReadAllText(journal)).Length==2,"corrupt_history_recovers");var bad=Parse(Zip(SupportDiagnostics.Export(Path.Combine(root,"corruption.zip"),home,game,""))["REPORT.json"]);Check(!String.IsNullOrEmpty((string)((Dictionary<string,object>)bad["journal"])["persistenceError"]),"corrupt_history_error_reported");
+  string blocked=Path.Combine(root,"blocked-store");File.WriteAllText(blocked,"not-directory");SupportDiagnostics.InitializeForTests(home,blocked);SupportDiagnostics.End(SupportDiagnostics.Begin("test","blocked",game),5,"error",new UnauthorizedAccessException());Check(File.ReadAllText(blocked)=="not-directory","journal_failure_does_not_change_operations");var failed=Parse(Zip(SupportDiagnostics.Export(Path.Combine(root,"blocked.zip"),home,game,""))["REPORT.json"]);Check(!String.IsNullOrEmpty((string)((Dictionary<string,object>)failed["journal"])["persistenceError"]),"journal_failure_exportable");
+  Console.WriteLine("SUPPORT_DIAGNOSTICS_TESTS_PASS checks="+count);return 0;
+ }catch(Exception e){Console.WriteLine(e.ToString());return 1;}}
+}

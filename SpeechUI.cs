@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -162,20 +162,62 @@ sealed class SpeechWindow : Form {
   if(action=="migrate"){if(String.IsNullOrWhiteSpace(legacy)||!Path.IsPathRooted(legacy))throw new ArgumentException("Выберите файл прежнего состояния.");args+=" -LegacyState "+Quote(Path.GetFullPath(legacy));}return args;
  }
  internal sealed class HostResponse{public SpeechState State;public string Raw,TemporaryDirectory;public int ExitCode;public bool Elevated;}
+ // Verify the complete runtime immediately before starting a host and keep it
+ // immutable until the child process (including an elevated operation) exits.
+ sealed class RuntimeLease:IDisposable {
+  readonly List<FileStream> streams=new List<FileStream>();
+  static readonly string[,] Pins=new string[,] {
+   {"speech/SpeechHost.ps1","c2aab640161ee3446be0ff49aae862de0099cdae0531c65c52aac2b39067916a"},
+   {"speech/SpeechEngine.ps1","5a7c8615fe5df7b173ea102c84810a8c3e8ee3cd28d8bfb45aa5e4ca8d3f5cd4"},
+   {"speech/ModelBootstrap.ps1","a8ef7986056557799c0928e7544ad096ec8d0e79e2ea03b7449c80a50c507cd9"},
+   {"speech/commands.ru.json","bb5a7e83bd1733057ccbd93e8dc1c405e87788663a0257068574c485143b6596"}
+  };
+  public RuntimeLease(string home):this(home,null){}
+  public RuntimeLease(string home,string action){try{
+   if(action!=null&&action!="status"&&action!="verify"&&!IsMutation(action))throw new ArgumentException("Неизвестная операция голосового модуля.");
+   string root=Path.GetFullPath(home).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar;
+   for(int n=0;n<Pins.GetLength(0);n++){
+    // Restore uses its saved XML/registry state, not the candidate dictionary or
+    // model installer. Model installation never loads the speech engine/dictionary.
+    if(action!=null&&((n==1&&action=="model")||(n==2&&action!="model")||(n==3&&(action=="restore"||action=="model"))))continue;
+    string path=Path.GetFullPath(Path.Combine(root,Pins[n,0].Replace('/',Path.DirectorySeparatorChar))),cursor=path;
+    if(!path.StartsWith(root,StringComparison.OrdinalIgnoreCase))throw new IOException("Путь голосового модуля вышел из папки лаунчера.");
+    while(!String.IsNullOrEmpty(cursor)){if((File.Exists(cursor)||Directory.Exists(cursor))&&(File.GetAttributes(cursor)&FileAttributes.ReparsePoint)!=0)throw new IOException("Голосовой модуль расположен по ссылке.");cursor=Path.GetDirectoryName(cursor);}
+    var stream=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.Read);streams.Add(stream);
+    if(stream.Length<=0||stream.Length>1048576)throw new IOException("Размер файла голосового модуля не прошёл проверку.");
+    string hash;using(var sha=System.Security.Cryptography.SHA256.Create())hash=BitConverter.ToString(sha.ComputeHash(stream)).Replace("-","").ToLowerInvariant();
+    if(hash!=Pins[n,1])throw new IOException("Файл голосового модуля изменён. Переоткройте исходный EXE лаунчера: "+Path.GetFileName(path));stream.Position=0;
+   }
+  }catch{Dispose();throw;}}
+  public void Dispose(){foreach(var stream in streams)stream.Dispose();streams.Clear();}
+ }
+ internal static void ValidateExitCode(SpeechState response,int exit){
+  if(exit!=0&&exit!=1&&exit!=2)throw new IOException("Неожиданный код завершения: "+exit+".\r\n"+response.Message);
+  bool failed=response.Status=="error"||response.Status=="failed"||response.Status=="conflict"||response.Status=="rolled_back";
+  bool completed=response.Status=="ready"||response.Status=="installed"||response.Status=="restored";
+  if((exit==0&&failed)||(exit!=0&&completed))throw new IOException("Состояние голосового модуля не соответствует коду завершения. Код: "+exit+".\r\n"+response.Message);
+ }
  internal static HostResponse ExecuteHost(string packageHome,string action,string gamePath,string legacy){
-  string owned=null;
+  string owned=null,raw=null;RuntimeLease lease=null;int exit=-1;
+  string operation=SupportDiagnostics.Begin("speech_commands",action,gamePath);
   try{
+   SupportDiagnostics.Stage(operation,"runtime-validation","Проверка файлов модуля перед запуском.");
+   lease=new RuntimeLease(packageHome,action);
    string host=Path.Combine(packageHome,"speech","SpeechHost.ps1");if(!File.Exists(host))throw new FileNotFoundException("Переоткройте исходный EXE: встроенный модуль голосовых команд не прошёл проверку.");
+   SupportDiagnostics.Stage(operation,"temporary-result","Подготовка отдельного файла результата.");
    string parent=Path.GetFullPath(Path.GetTempPath());if((File.GetAttributes(parent)&FileAttributes.ReparsePoint)!=0)throw new IOException("Временная папка является ссылкой.");
    owned=Path.Combine(parent,"F1RU-Speech-"+Guid.NewGuid().ToString("N"));if(Directory.Exists(owned)||File.Exists(owned))throw new IOException("Временный путь уже занят.");Directory.CreateDirectory(owned);string result=Path.Combine(owned,"result.json");
    var start=new ProcessStartInfo(PowerShell64(),Arguments(host,action,gamePath,result,legacy)){UseShellExecute=IsMutation(action),CreateNoWindow=!IsMutation(action),WindowStyle=ProcessWindowStyle.Hidden};if(IsMutation(action))start.Verb="runas";
-   int exit;using(var process=Process.Start(start)){if(process==null)throw new IOException("Windows не вернула процесс настройки.");process.WaitForExit();exit=process.ExitCode;}
+   SupportDiagnostics.Stage(operation,"host-launch",IsMutation(action)?"Запуск с подтверждением Windows.":"Запуск проверки без повышения прав.");
+   using(var process=Process.Start(start)){if(process==null)throw new IOException("Windows не вернула процесс настройки.");SupportDiagnostics.Stage(operation,"host-wait","Модуль запущен; ожидается завершение.");process.WaitForExit();exit=process.ExitCode;}
+   SupportDiagnostics.Stage(operation,"result-validation","Код завершения модуля: "+exit);
    if(!File.Exists(result))throw new IOException("Модуль не записал результат. Код завершения: "+exit+".");
    if((File.GetAttributes(result)&FileAttributes.ReparsePoint)!=0||new FileInfo(result).Length>262144)throw new IOException("Неверный файл результата.");
-   string raw=File.ReadAllText(result,Encoding.UTF8);SpeechState response=SpeechState.Parse(raw);
-   if(exit!=0&&exit!=2&&exit!=1)throw new IOException("Неожиданный код завершения: "+exit+".\r\n"+response.Message);
+   raw=File.ReadAllText(result,Encoding.UTF8);SpeechState response=SpeechState.Parse(raw);
+   ValidateExitCode(response,exit);SupportDiagnostics.End(operation,exit,raw,null);
    return new HostResponse{State=response,Raw=raw,ExitCode=exit,TemporaryDirectory=owned,Elevated=IsMutation(action)};
-  }finally{if(owned!=null)Cleanup(owned);}
+  }catch(Exception ex){SupportDiagnostics.End(operation,exit,raw,ex);throw;}
+  finally{if(lease!=null)lease.Dispose();if(owned!=null)Cleanup(owned);}
  }
  void Run(string action,string legacy){
   if(busy||readOnly)return;busy=true;RefreshButtons();heading.Text=action=="status"?"Проверяем состояние…":"Выполняем настройку…";stateText.Text=IsMutation(action)?"Подтвердите запрос Windows и дождитесь завершения. Игра автоматически не закрывается.":"Проверка читает состояние; установка сама не начинается.";

@@ -1,9 +1,9 @@
-"""Build/test the explicit v0.33.1 source package; never starts an installed game."""
+"""Build/test the explicit v0.33.2 source package; never starts an installed game."""
 from pathlib import Path
 import argparse,hashlib,json,os,re,subprocess,sys,uuid,zipfile
 ROOT=Path(__file__).resolve().parents[1]
-VERSION='0.33.1';PACKAGE=ROOT/'dist/F1_25_RU_v0.33.1';EXE=ROOT/'dist/F1_25_RU_v0.33.1.exe'
-REPORTS=Path(os.environ.get('F1RU_CI_WORK',str(ROOT/'dist/ci-v0.33.1')));TESTS=ROOT/'tests/release032'
+VERSION='0.33.2';PACKAGE=ROOT/'dist/F1_25_RU_v0.33.2';EXE=ROOT/'dist/F1_25_RU_v0.33.2.exe'
+REPORTS=Path(os.environ.get('F1RU_CI_WORK',str(ROOT/'dist/ci-v0.33.2')));TESTS=ROOT/'tests/release032'
 CSC=Path(os.environ.get('WINDIR',r'C:\Windows'))/'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 PS=Path(os.environ.get('WINDIR',r'C:\Windows'))/'System32/WindowsPowerShell/v1.0/powershell.exe'
 ALLOW_NAMES=tuple(name for name in (ROOT/'.release/package-v0.33.txt').read_text(encoding='utf-8-sig').splitlines() if name)
@@ -27,7 +27,7 @@ def run(label,args,result=None):
  return record.get('literal_result',p.stdout)
 def compile_test(name,sources,target='exe'):
  output=PACKAGE/(name+('.dll' if target=='library' else '.exe'))
- run('COMPILE_'+name,[CSC,'/nologo','/utf8output','/target:'+target,'/platform:x64','/optimize+','/warn:4','/warnaserror+','/r:System.Windows.Forms.dll','/r:System.Drawing.dll','/r:System.Web.Extensions.dll','/out:'+str(output)]+list(sources));return output
+ run('COMPILE_'+name,[CSC,'/nologo','/utf8output','/target:'+target,'/platform:x64','/optimize+','/warn:4','/warnaserror+','/r:System.Windows.Forms.dll','/r:System.Drawing.dll','/r:System.Web.Extensions.dll','/r:System.IO.Compression.dll','/r:System.IO.Compression.FileSystem.dll','/out:'+str(output)]+list(sources));return output
 def hook(exe,flag,name):
  output=REPORTS/(name+('.json' if flag in ('--bundle-self-test','--launch-context-self-test') else '.txt'))
  return output,run(name,[exe,flag,output],output)
@@ -60,6 +60,15 @@ def main():
   source=ROOT/('manifest.base.json' if name=='manifest.json' else name)
   need(digest(PACKAGE/name)==digest(source),'Staged package is stale: '+name)
   source_runtime_pins[name]=digest(source)
+ text=run('DIAGNOSTIC_CORE',[PS,'-NoProfile','-ExecutionPolicy','Bypass','-File',ROOT/'tests/diagnostics/support_core_tests.ps1','-OutputDirectory',REPORTS/'diagnostic-core'])
+ need('SUPPORT_DIAGNOSTICS_TESTS_PASS checks=43' in text,'Diagnostic core regression');counts['diagnostic_core_checks']=43
+ diagnostic_ui=compile_test('ReleaseDiagnosticsUI',[ROOT/'tests/diagnostics/UiDiagnosticsTests.cs']);output=REPORTS/'DIAGNOSTIC_UI.txt'
+ text=run('DIAGNOSTIC_UI',[diagnostic_ui,PACKAGE/'Launcher.exe',REPORTS/'diagnostic-ui',output],output)
+ need('DIAGNOSTIC_UI_PASS checks=46' in text,'Diagnostic UI regression');counts['diagnostic_ui_checks']=46
+ text=run('DIAGNOSTIC_VOICE',[PS,'-NoProfile','-ExecutionPolicy','Bypass','-File',ROOT/'tests/diagnostics/voice_journal_tests.ps1','-Source',ROOT,'-Output',ROOT.parent/('diagnostic-voice-ci-'+uuid.uuid4().hex)])
+ need('VOICE_JOURNAL_PASS checks=59' in text,'Voice diagnostic regression');counts['diagnostic_voice_checks']=59
+ text=run('DIAGNOSTIC_TEXT',[sys.executable,ROOT/'tests/diagnostics/text_journal_regression.py','--source',ROOT,'--output',REPORTS/'diagnostic-text'])
+ need('TEXT_JOURNAL_WRAPPER_PASS checks=12' in text and 'TEXT_JOURNAL_SOURCE_PASS checks=7' in text,'Text diagnostic regression');counts['diagnostic_text_checks']=19
  run('STARTUP_REGRESSIONS',[sys.executable,ROOT/'tests/release033/startup_regressions.py','--work',REPORTS/'startup033'])
  startup=read(REPORTS/'startup033/artifact.json');need(startup['status']=='PASS' and startup['checks']==80,'Startup recovery/diagnostic regressions');counts['startup_checks']=80
  run('ENGINEER_PROCESS_GUARD',[PS,'-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',ROOT/'tests/release033/EngineerProcessTests.ps1','-Output',REPORTS/'ENGINEER_PROCESS.json'])
@@ -68,7 +77,7 @@ def main():
  privilege_guard=read(REPORTS/'ENGINEER_PRIVILEGE.json');need(privilege_guard['status']=='PASS' and privilege_guard['checks']==43 and privilege_guard['elevatedResult'] is True and privilege_guard['nonElevatedResult'] is False and privilege_guard['gameWrites'] is False,'Privilege guard regressions');counts['engineer_privilege_checks']=43
  run('SOURCE_CONTRACTS',[sys.executable,ROOT/'tests/release033/source_contract_tests.py','--work',REPORTS/'source-contracts033'])
  contracts=read(REPORTS/'source-contracts033/artifact.json');need(contracts['status']=='PASS' and contracts['checks']==82,'Source contract regressions');counts['source_contract_checks']=82
- for flag,name,key,count in [('--self-test','UI','ui_checks',191),('--speech-self-test','SPEECH_UI','speech_ui_checks',48),('--max-voice-self-test','MAX_UI','max_ui_checks',36),('--engineer-voice-self-test','ENGINEER_UI','engineer_ui_checks',41)]:
+ for flag,name,key,count in [('--self-test','UI','ui_checks',205),('--speech-self-test','SPEECH_UI','speech_ui_checks',48),('--max-voice-self-test','MAX_UI','max_ui_checks',52),('--engineer-voice-self-test','ENGINEER_UI','engineer_ui_checks',41)]:
   _,text=hook(PACKAGE/'Launcher.exe',flag,'NATIVE_'+name);match=re.search(r'checks=(\d+)',text)
   need(match and int(match[1])==count,'Unexpected '+name+' result');counts[key]=count;native.append(text.strip())
  profile=compile_test('ReleaseProfileTests',[TESTS/'Profile120GateTests.cs',ROOT/'Updater.cs',ROOT/'GameTextProfiles.cs',ROOT/'TranslationVariants.cs'])
@@ -96,7 +105,7 @@ def main():
  deep=compile_test('ReleaseDeepAudit',[TESTS/'DeepStateAudit.cs']);text=run('DEEP_STATE',[deep,library,REPORTS/'DEEP_STATE.txt'])
  need('DEEP_STATE_AUDIT checks=80 findings=0' in text,'Deep-state regression');counts['deep_state_checks']=80
  run('SINGLE_EXE_TRANSACTIONS',[PS,'-NoProfile','-ExecutionPolicy','Bypass','-File',ROOT/'single_exe/source/Test-SingleExe.ps1',
-  '-PackageDirectory',PACKAGE,'-WorkDirectory',REPORTS/'single-exe-tests','-Version','0.33.1-ci','-UpdaterSourceDirectory',ROOT])
+  '-PackageDirectory',PACKAGE,'-WorkDirectory',REPORTS/'single-exe-tests','-Version','0.33.2-ci','-UpdaterSourceDirectory',ROOT])
  single=read(REPORTS/'single-exe-tests/results/CI_RESULTS.json')
  need(single['status']=='PASS' and single['checks']==50 and single['rollbackCopyRestored'] and single['actualUpdaterIntegration'] and single['argumentForwarding'] and single['exitCodePropagation'],'Single-EXE transaction checks failed')
  need(single['gameModified'] is False and single['registryModified'] is False,'Single-EXE test isolation failed')

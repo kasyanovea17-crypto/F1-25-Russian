@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -18,6 +18,7 @@ sealed class MaxVoiceState {
   if(data==null||!data.ContainsKey("schema")||!(data["schema"] is int)||(int)data["schema"]!=1)throw new InvalidDataException("Неверный ответ аудиомодуля.");
   var state=new MaxVoiceState{Status=Text(data,"status",80),Code=Text(data,"code",120),Message=Text(data,"message",8000),Backup=Text(data,"backup",32768,true),Installed=Boolean(data,"installed"),CanInstall=Boolean(data,"canInstall"),CanRestore=Boolean(data,"canRestore"),GameRunning=Boolean(data,"gameRunning")};
   if(!data.ContainsKey("maxSlots")||!(data["maxSlots"] is int)||(int)data["maxSlots"]!=192||!Boolean(data,"testOnly"))throw new InvalidDataException("Неожиданный тип аудиопакета.");
+  if(state.Status=="error"&&(state.Installed||state.CanInstall||state.CanRestore))throw new InvalidDataException("Ошибка аудиомодуля не может разрешать установку.");
   return state;
  }
  static string Text(Dictionary<string,object> data,string key,int max,bool optional=false){object value;if(!data.TryGetValue(key,out value)||value==null){if(optional)return "";throw new InvalidDataException("Нет поля: "+key);}if(!(value is string)||((string)value).Length>max)throw new InvalidDataException("Неверное поле: "+key);return (string)value;}
@@ -100,7 +101,7 @@ sealed class MaxVoiceWindow : Form {
  internal static bool MayInstall(MaxVoiceState value){return value!=null&&value.CanInstall&&!value.GameRunning;}
  internal static bool MayRestore(MaxVoiceState value){return value!=null&&value.CanRestore&&!value.GameRunning;}
  void RefreshButtons(){bool active=!busy&&(!readOnly||renderOnly),known=state!=null;refresh.Enabled=active;install.Enabled=active&&MayInstall(state);install.Visible=!known||!state.Installed;verify.Enabled=active&&known&&state.Installed;verify.Visible=known&&state.Installed;restore.Enabled=active&&MayRestore(state);close.Enabled=!busy;back.Enabled=!busy;topClose.Enabled=!busy;diagnostics.Enabled=!busy;copyReport.Enabled=details.Text.Length>0;progress.Visible=busy;}
- void Apply(MaxVoiceState value,string raw){state=value;stateHeading.Text=value.Installed?"Озвучка Макса установлена":value.Code=="restored"||value.Code=="already_restored"?"Предыдущая озвучка восстановлена":value.CanInstall?"Аудиобанк совместим":"Установка сейчас недоступна";stateMarker.BackColor=value.GameRunning?WarningColor:value.Installed||value.CanInstall?SuccessColor:WarningColor;description.Text=value.Message;if(value.GameRunning)description.Text+="\nИгра запущена: изменение файлов отложено.";description.AccessibleDescription=description.Text;details.Text=raw;RefreshButtons();}
+ void Apply(MaxVoiceState value,string raw){state=value;stateHeading.Text=value.GameRunning?"Закройте F1 25":value.Status=="error"?"Проверка не завершена":value.Installed?"Озвучка Макса установлена":value.Code=="restored"||value.Code=="already_restored"?"Предыдущая озвучка восстановлена":value.Code=="unknown_audio_bank"?"Нужна проверка совместимости":value.Code=="unfinished_transaction"?"Нужно восстановление озвучки":value.CanInstall?"Аудиобанк совместим":"Установка сейчас недоступна";stateMarker.BackColor=value.GameRunning?WarningColor:value.Installed||value.CanInstall?SuccessColor:WarningColor;description.Text=value.Message;if(value.GameRunning)description.Text+="\nИгра запущена: изменение файлов отложено.";description.AccessibleDescription=description.Text;details.Text=raw;RefreshButtons();}
  protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);using(var p=Shape.Round(new Rectangle(0,0,ClientSize.Width-1,ClientSize.Height-1),16))using(var pen=new Pen(RuleColor))e.Graphics.DrawPath(pen,p);}
  protected override void OnSizeChanged(EventArgs e){base.OnSizeChanged(e);if(ClientSize.Width>32&&ClientSize.Height>32){var previous=Region;using(var p=Shape.Round(ClientRectangle,16))Region=new Region(p);if(previous!=null)previous.Dispose();}}
  protected override void OnKeyDown(KeyEventArgs e){if(e.KeyCode==Keys.Escape){e.Handled=true;e.SuppressKeyPress=true;if(!busy)Close();return;}base.OnKeyDown(e);}
@@ -111,17 +112,56 @@ sealed class MaxVoiceWindow : Form {
  }
  static string PowerShell64(){return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),Environment.Is64BitOperatingSystem&&!Environment.Is64BitProcess?"Sysnative":"System32","WindowsPowerShell","v1.0","powershell.exe");}
  internal static string Arguments(string host,string action,string gamePath,string result){if(action!="status"&&action!="verify"&&!IsMutation(action))throw new ArgumentException("Неизвестная операция.");if(!Path.IsPathRooted(gamePath)||gamePath.IndexOf('"')>=0)throw new ArgumentException("Нужен полный путь к игре.");return "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "+Quote(host)+" -Action "+action+" -GamePath "+Quote(Path.GetFullPath(gamePath))+" -ResultPath "+Quote(result);}
+ sealed class RuntimeLease:IDisposable {
+  readonly List<FileStream> streams=new List<FileStream>();
+  static readonly string[,] Pins=new string[,] {
+   {"audio/MaxVoice.ps1","ef566595a63291fca2e9d3b6160d684df48d79befbebf708692b512ce3bac1d8"},
+   {"audio/MaxVoiceHost.ps1","d09ee6ada15155b1876393b0759185d408935b11e5c7b0c60dc6db56bf6b9708"},
+   {"audio/payload/max-ru-test.json","24353455483c192129a8cc6b9b6238d481da901d5237b9d16ca6c9d6b789e77b"},
+   {"audio/payload/max-ru-test.delta","e26fb80e9ee24c335f2bdb1197d49c1104519670f56a619e7fe06e39446bca16"}
+  };
+  public RuntimeLease(string packageHome,string action){try{
+   if(action!="status"&&action!="verify"&&!IsMutation(action))throw new ArgumentException("Неизвестная операция озвучки.");
+   // Only install consumes replacement bytes. Status/verify/restore can inspect
+   // and recover the owned backup even when unused payload files are missing.
+   int count=action=="install"?Pins.GetLength(0):2;
+   string root=Path.GetFullPath(packageHome).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar;
+   for(int n=0;n<count;n++){
+    string path=Path.GetFullPath(Path.Combine(root,Pins[n,0].Replace('/',Path.DirectorySeparatorChar))),cursor=path;
+    if(!path.StartsWith(root,StringComparison.OrdinalIgnoreCase))throw new IOException("Путь аудиомодуля вышел из папки лаунчера.");
+    while(!String.IsNullOrEmpty(cursor)){if((File.Exists(cursor)||Directory.Exists(cursor))&&(File.GetAttributes(cursor)&FileAttributes.ReparsePoint)!=0)throw new IOException("Аудиомодуль расположен по ссылке.");cursor=Path.GetDirectoryName(cursor);}
+    var stream=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.Read);streams.Add(stream);
+    if(stream.Length<=0||stream.Length>67108864)throw new IOException("Размер файла аудиомодуля не прошёл проверку.");
+    string hash;using(var h=System.Security.Cryptography.SHA256.Create())hash=BitConverter.ToString(h.ComputeHash(stream)).Replace("-","").ToLowerInvariant();
+    if(hash!=Pins[n,1])throw new IOException("Файл аудиомодуля изменён. Переоткройте исходный EXE лаунчера: "+Path.GetFileName(path));stream.Position=0;
+   }
+  }catch{Dispose();throw;}}
+  public void Dispose(){foreach(var stream in streams)stream.Dispose();streams.Clear();}
+ }
+ internal static MaxVoiceState ValidateCompletion(string raw,int exit){
+  var value=MaxVoiceState.Parse(raw);
+  int expected=value.Status=="error"?1:value.Status=="not_ready"||value.Status=="recovery_required"?2:value.Status=="ready"||value.Status=="installed"||value.Status=="installed_external"||value.Status=="restored"?0:-1;
+  if(exit!=expected||expected<0)throw new InvalidDataException("Ответ аудиомодуля не соответствует коду завершения: "+exit);
+  return value;
+ }
  static string Execute(string packageHome,string action,string gamePath){
-  string owned=null;
+  string owned=null,raw=null;RuntimeLease lease=null;int exit=-1;
+  string operation=SupportDiagnostics.Begin("max_voice",action,gamePath);
   try{
+   SupportDiagnostics.Stage(operation,"runtime-validation","Проверка файлов модуля перед запуском.");
+   lease=new RuntimeLease(packageHome,action);
    string host=Path.Combine(packageHome,"audio","MaxVoiceHost.ps1");if(!File.Exists(host)||(File.GetAttributes(host)&FileAttributes.ReparsePoint)!=0)throw new IOException("Отсутствует аудиомодуль. Запустите полный EXE лаунчера заново.");
+   SupportDiagnostics.Stage(operation,"temporary-result","Подготовка отдельного файла результата.");
    string temp=Path.GetFullPath(Path.GetTempPath());if((File.GetAttributes(temp)&FileAttributes.ReparsePoint)!=0)throw new IOException("Временная папка является ссылкой.");
    owned=Path.Combine(temp,"F1RU-MaxVoice-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(owned);string result=Path.Combine(owned,"result.json");
    var start=new ProcessStartInfo(PowerShell64(),Arguments(host,action,gamePath,result)){UseShellExecute=IsMutation(action),CreateNoWindow=!IsMutation(action),WindowStyle=ProcessWindowStyle.Hidden};if(IsMutation(action))start.Verb="runas";
-   int exit;using(var process=Process.Start(start)){if(process==null)throw new IOException("Windows не вернула процесс настройки.");process.WaitForExit();exit=process.ExitCode;}
+   SupportDiagnostics.Stage(operation,"host-launch",IsMutation(action)?"Запуск с подтверждением Windows.":"Запуск проверки без повышения прав.");
+   using(var process=Process.Start(start)){if(process==null)throw new IOException("Windows не вернула процесс настройки.");SupportDiagnostics.Stage(operation,"host-wait","Модуль запущен; ожидается завершение.");process.WaitForExit();exit=process.ExitCode;}
+   SupportDiagnostics.Stage(operation,"result-validation","Код завершения модуля: "+exit);
    if(!File.Exists(result)||(File.GetAttributes(result)&FileAttributes.ReparsePoint)!=0||new FileInfo(result).Length>262144)throw new IOException("Аудиомодуль не записал проверяемый результат. Код: "+exit);
-   string raw=File.ReadAllText(result,Encoding.UTF8);MaxVoiceState.Parse(raw);if(exit!=0&&exit!=1&&exit!=2)throw new IOException("Неожиданный код аудиомодуля: "+exit);return raw;
-  }finally{if(owned!=null)Cleanup(owned);}
+   raw=File.ReadAllText(result,Encoding.UTF8);ValidateCompletion(raw,exit);SupportDiagnostics.End(operation,exit,raw,null);return raw;
+  }catch(Exception ex){SupportDiagnostics.End(operation,exit,raw,ex);throw;}
+  finally{if(lease!=null)lease.Dispose();if(owned!=null)Cleanup(owned);}
  }
  internal static void Cleanup(string directory){
   try{string parent=Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar);string path=Path.GetFullPath(directory);string name=Path.GetFileName(path);const string prefix="F1RU-MaxVoice-";Guid id;if(!String.Equals(Path.GetDirectoryName(path),parent,StringComparison.OrdinalIgnoreCase)||!name.StartsWith(prefix,StringComparison.Ordinal)||!Guid.TryParseExact(name.Substring(prefix.Length),"N",out id)||!Directory.Exists(path)||(File.GetAttributes(path)&FileAttributes.ReparsePoint)!=0)return;string result=Path.Combine(path,"result.json");if(File.Exists(result)&&(File.GetAttributes(result)&FileAttributes.ReparsePoint)==0)File.Delete(result);if(Directory.GetFileSystemEntries(path).Length==0)Directory.Delete(path);}catch(IOException){}catch(UnauthorizedAccessException){}
@@ -148,11 +188,33 @@ sealed class MaxVoiceWindow : Form {
     test(w.CancelButton==w.close,"escape closes to parent");test(!w.Confirm("test","test"),"self-test confirmation never opens or authorizes host");
     w.busy=true;w.RefreshButtons();test(!w.close.Enabled&&!w.topClose.Enabled&&!w.back.Enabled&&!w.diagnostics.Enabled,"busy surface cannot close or change views");var closing=new FormClosingEventArgs(CloseReason.UserClosing,false);w.OnFormClosing(closing);test(closing.Cancel,"busy close veto");
     w.busy=false;w.Apply(running,ready);test(w.description.Text.Contains("Игра запущена")&&!w.install.Enabled&&!w.restore.Enabled,"running message and mutation gates");
+    test(w.stateHeading.Text=="Закройте F1 25","running game has a clear title");
+    string errorRaw=ready.Replace("\"status\":\"ready\"","\"status\":\"error\"").Replace("\"canInstall\":true","\"canInstall\":false");w.Apply(MaxVoiceState.Parse(errorRaw),errorRaw);test(w.stateHeading.Text=="Проверка не завершена"&&!w.install.Enabled,"process/permission errors differ from unsupported audio");
    }
    using(var preview=CreatePreview(home,"supported")){test(preview.readOnly&&preview.renderOnly&&preview.install.Enabled,"preview is visually ready but host-isolated");string before=preview.LastReport;preview.Run("status");test(preview.LastReport==before&&!preview.busy,"preview status never invokes host");}
    using(var preview=CreatePreview(home,"unsupported")){test(!preview.install.Enabled&&!preview.restore.Enabled,"unsupported preview fails closed");}
    using(var preview=CreatePreview(home,"diagnostics")){test(preview.diagnosticsOpen&&preview.LastReport.Contains("previewOnly"),"diagnostics preview is explicit synthetic report");}
    test(File.Exists(Path.Combine(home,"audio","MaxVoice.ps1")),"engine included");test(File.Exists(Path.Combine(home,"audio","MaxVoiceHost.ps1")),"host included");test(File.Exists(Path.Combine(home,"audio","payload","max-ru-test.json")),"manifest included");test(File.Exists(Path.Combine(home,"audio","payload","max-ru-test.delta")),"literal patch included");
+   test(ValidateCompletion(ready,0).CanInstall,"successful ready result and exit agree");
+   rejected=false;try{ValidateCompletion(ready,1);}catch(InvalidDataException){rejected=true;}test(rejected,"nonzero exit cannot report success");
+   rejected=false;try{MaxVoiceState.Parse(ready.Replace("\"status\":\"ready\"","\"status\":\"error\""));}catch(InvalidDataException){rejected=true;}test(rejected,"error cannot grant mutation");
+   using(var lease=new RuntimeLease(home,"install")){
+    test(File.ReadAllBytes(Path.Combine(home,"audio","MaxVoiceHost.ps1")).Length>0,"lease permits child reading host");
+    foreach(string file in new[]{"MaxVoice.ps1","MaxVoiceHost.ps1","payload/max-ru-test.json","payload/max-ru-test.delta"}){
+     rejected=false;try{using(var stream=new FileStream(Path.Combine(home,"audio",file),FileMode.Open,FileAccess.Write,FileShare.ReadWrite)){} }catch(IOException){rejected=true;}test(rejected,"lease denies write to "+file);
+    }
+   }
+   string isolated=Path.Combine(Path.GetTempPath(),"F1RU-MaxLeaseTest-"+Guid.NewGuid().ToString("N"));
+   string audio=Path.Combine(isolated,"audio"),core=Path.Combine(audio,"MaxVoice.ps1");Directory.CreateDirectory(audio);File.WriteAllText(core,"tampered fixture source");
+   try{rejected=false;try{using(var lease=new RuntimeLease(isolated,"restore")){} }catch(IOException){rejected=true;}test(rejected,"tampered core rejected before elevation");}
+   finally{File.Delete(core);Directory.Delete(audio);Directory.Delete(isolated);}
+   string coreOnly=isolated+"-core-only";Directory.CreateDirectory(Path.Combine(coreOnly,"audio"));
+   foreach(string file in new[]{"MaxVoice.ps1","MaxVoiceHost.ps1"})File.Copy(Path.Combine(home,"audio",file),Path.Combine(coreOnly,"audio",file));
+   try{
+    foreach(string action in new[]{"status","verify","restore"})using(var lease=new RuntimeLease(coreOnly,action)){test(true,"core-only package supports "+action);}
+    rejected=false;try{using(var lease=new RuntimeLease(coreOnly,"install")){} }catch(IOException){rejected=true;}test(rejected,"install still requires complete pinned payload");
+    using(var lease=new RuntimeLease(coreOnly,"restore")){rejected=false;try{using(var stream=new FileStream(Path.Combine(coreOnly,"audio","MaxVoiceHost.ps1"),FileMode.Open,FileAccess.Write,FileShare.ReadWrite)){} }catch(IOException){rejected=true;}test(rejected,"core-only restore protects host while running");}
+   }finally{foreach(string file in new[]{"MaxVoice.ps1","MaxVoiceHost.ps1"})File.Delete(Path.Combine(coreOnly,"audio",file));Directory.Delete(Path.Combine(coreOnly,"audio"));Directory.Delete(coreOnly);}
    report.Append("MAX_VOICE_UI_PASS checks=").Append(checks).Append(" host_calls=0 game_writes=false registry_writes=false\n");File.WriteAllText(resultPath,report.ToString(),Encoding.UTF8);return 0;
   }catch(Exception ex){File.WriteAllText(resultPath,"MAX_VOICE_UI_FAIL "+ex+"\n",Encoding.UTF8);return 1;}
  }

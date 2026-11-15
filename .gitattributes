@@ -6,3 +6,13 @@ audio/payload/* -text
 audio/engineer/*.cs -text
 audio/engineer/*.ps1 -text
 audio/engineer/payload/* -text
+
+# These runtime modules are byte-pinned by the text/voice hosts.
+Engine.ps1 -text
+Compatibility.cs -text
+audio/MaxVoice.ps1 -text
+audio/MaxVoiceHost.ps1 -text
+speech/SpeechHost.ps1 -text
+speech/SpeechEngine.ps1 -text
+speech/ModelBootstrap.ps1 -text
+speech/commands.ru.json -text

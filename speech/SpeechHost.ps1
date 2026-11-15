@@ -17,6 +17,7 @@ function Quote([string]$s){
  return '"'+$s.TrimEnd('\')+'"'
 }
 function ResultDestination([string]$path){
+ if(-not [IO.Path]::IsPathRooted($path)){throw 'An absolute result path is required.'}
  $p=[IO.Path]::GetFullPath($path);$temp=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')+'\'
  if(-not $p.StartsWith($temp,[StringComparison]::OrdinalIgnoreCase)){throw 'Result must be in the current user temporary folder.'}
  $tail=$p.Substring($temp.Length)
@@ -25,6 +26,7 @@ function ResultDestination([string]$path){
  if(-not [IO.Directory]::Exists($dir)){throw 'Result folder is missing.'}
  $cursor=$p
  while($cursor){if(Test-Path -LiteralPath $cursor){if(([IO.File]::GetAttributes($cursor)-band[IO.FileAttributes]::ReparsePoint)-ne 0){throw 'Reparse destination rejected.'}};$cursor=[IO.Path]::GetDirectoryName($cursor)}
+ if([IO.File]::Exists($p) -or [IO.Directory]::Exists($p)){throw 'Result destination already exists.'}
  return $p
 }
 $destination=ResultDestination $ResultPath
@@ -49,5 +51,7 @@ try{
 }catch{
  $exit=1;$j=[ordered]@{status='error';code='host_error';message=$_.Exception.Message;modelInstalled=$false;installed=$false;needsRestart=$false;gameRunning=$false;canInstall=$false;canRestore=$false;commandCount=37;details=$null}
 }
-[IO.File]::WriteAllText($destination,($j|ConvertTo-Json -Depth 24 -Compress),$utf8)
+[void](ResultDestination $destination)
+$stream=[IO.File]::Open($destination,'CreateNew','Write','None')
+try{$bytes=$utf8.GetBytes(($j|ConvertTo-Json -Depth 24 -Compress));$stream.Write($bytes,0,$bytes.Length);$stream.Flush($true)}finally{$stream.Dispose()}
 exit $exit

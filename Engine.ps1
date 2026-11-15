@@ -1,6 +1,26 @@
-﻿param([ValidateSet('prepare','install','restore')][string]$Action='prepare',[Parameter(Mandatory=$true)][string]$GamePath,[switch]$TestMode,[ValidateSet('russian','original_names')][string]$Translation='russian')
+﻿param([ValidateSet('prepare','install','restore')][string]$Action='prepare',[Parameter(Mandatory=$true)][string]$GamePath,[switch]$TestMode,[ValidateSet('russian','original_names')][string]$Translation='russian',[string]$ResultPath)
 $ErrorActionPreference='Stop'
 [Console]::OutputEncoding=New-Object Text.UTF8Encoding($false)
+$script:EngineMessages=New-Object 'System.Collections.Generic.List[string]'
+$script:EngineExit=1
+function Emit([string]$message){
+ if(($script:EngineMessages | Measure-Object -Property Length -Sum).Sum+$message.Length -gt 262144){throw 'Журнал операции превысил допустимый размер.'}
+ $script:EngineMessages.Add($message);Write-Output $message
+}
+function ResultDestination([string]$path){
+ if(-not [IO.Path]::IsPathRooted($path)){throw 'Ожидается абсолютный путь результата.'}
+ $full=[IO.Path]::GetFullPath($path);$temp=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')+'\'
+ if(-not $full.StartsWith($temp,[StringComparison]::OrdinalIgnoreCase)-or$full.Substring($temp.Length)-notmatch '^F1RU-Text-[a-fA-F0-9]{32}\\result\.json$'){throw 'Папка результата не принадлежит текущему пользователю. При запросе Windows используйте ту же учётную запись.'}
+ if(-not [IO.Directory]::Exists([IO.Path]::GetDirectoryName($full))){throw 'Папка результата отсутствует.'}
+ $cursor=$full
+ while($cursor){if(([IO.File]::Exists($cursor)-or[IO.Directory]::Exists($cursor))-and(([IO.File]::GetAttributes($cursor)-band[IO.FileAttributes]::ReparsePoint)-ne0)){throw 'Ссылки в пути результата отклонены.'};$cursor=[IO.Path]::GetDirectoryName($cursor)}
+ if([IO.File]::Exists($full)){throw 'Результат уже существует.'}
+ return $full
+}
+# Validate before any game write. A different administrator account has a different
+# temporary directory and must not write an arbitrary caller-supplied destination.
+$destination=$null;if($ResultPath){$destination=ResultDestination $ResultPath}
+
 function Hash([string]$p){$a=[Security.Cryptography.SHA256]::Create();$s=[IO.File]::OpenRead($p);try{return ([BitConverter]::ToString($a.ComputeHash($s))).Replace('-','').ToLowerInvariant()}finally{$s.Dispose();$a.Dispose()}}
 function Put([string]$src,[string]$dst){
  [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($dst))|Out-Null
@@ -32,7 +52,7 @@ function Patch([string]$path,[bool]$install){
   }
  }finally{$s.Dispose()}
 }
-function AssertClosed{if(!$TestMode -and (Get-Process -Name F1_25 -ErrorAction SilentlyContinue)){throw 'Сначала закройте F1 25.'}}
+function AssertClosed{if(!$TestMode -and (Get-Process -Name F1_25,F1_25_dx12 -ErrorAction SilentlyContinue)){throw 'Сначала закройте F1 25.'}}
 function TargetNames{return @('game.dat')+@($profile.stock_files.PSObject.Properties|ForEach-Object {$_.Name})+@($profile.install_files|ForEach-Object {$_.target})+@($profile.backup_dir+'\state.json')}
 function CurrentHash([string]$p){if([IO.File]::Exists($p)){return (Hash $p)};if(Test-Path -LiteralPath $p){throw 'Вместо файла обнаружена папка.'};return $null}
 function SaveJson([string]$path,$value){
@@ -93,8 +113,8 @@ function RecoverPending{
  }
  foreach($e in $j.entries){$h=CurrentHash (Inside $e.target);if($e.existed){if($h -ne $e.before){throw 'Восстановленный файл не прошёл проверку.'}}elseif($h){throw 'Лишний файл остался после восстановления.'}}
  [IO.File]::Delete($pendingPath)
- try{CleanupTxn $j.transaction}catch{Write-Output ('Восстановление завершено; временные файлы сохранены: '+$_.Exception.Message)}
- Write-Output 'RECOVERY PASS; незавершённая операция отменена, исходное состояние восстановлено.'
+ try{CleanupTxn $j.transaction}catch{Emit ('Восстановление завершено; временные файлы сохранены: '+$_.Exception.Message)}
+ Emit 'RECOVERY PASS; незавершённая операция отменена, исходное состояние восстановлено.'
 }
 function LoadCompatibility {
  if(!('ResourceCompatibility' -as [type])){Add-Type -Path (Join-Path $PSScriptRoot 'Compatibility.cs')}
@@ -122,7 +142,7 @@ function ResolveMicroArchive {
  if($current -ne $result[0] -and $current -ne $result[1]){throw 'Обнаружено смешанное состояние ресурсов. Восстановите оригинальные файлы.'}
  $profile.dat_original=$result[0];$profile.dat_installed=$result[1];$profile.accepted_dat=@($current)
  $profile.backup_dir='.f1ru-v25-'+$result[0]
- Write-Output 'COMPATIBILITY PASS; изменены посторонние данные, ресурсы перевода совпадают. Резервная копия привязана к текущему архиву.'
+ Emit 'COMPATIBILITY PASS; изменены посторонние данные, ресурсы перевода совпадают. Резервная копия привязана к текущему архиву.'
 }
 $lock=$null;$txn=$null;$txnName=$null;$pendingPath=$null
 try{
@@ -134,7 +154,7 @@ try{
  $profiles=@($m.native_profiles|Where-Object {$_.exe_sha256 -eq $exeHash})
  if($profiles.Count -eq 0){
   $profiles=@($m.native_profiles|Where-Object { !$_.language_set -and $_.micro_compatibility -and (ValidPublisher (Inside 'F1_25.exe') $_.micro_compatibility.publisher_organization) -and (HeaderCompatible $_ (Inside 'F1_25.exe')) })
-  if($profiles.Count -eq 1){Write-Output 'COMPATIBILITY PASS; подпись EA действительна, индекс игровых ресурсов не изменён.'}
+  if($profiles.Count -eq 1){Emit 'COMPATIBILITY PASS; подпись EA действительна, индекс игровых ресурсов не изменён.'}
  }
  if($profiles.Count -ne 1){throw 'Структура игровых ресурсов изменилась. Нужен новый профиль совместимости, файлы сохранены.'}
  $profile=$profiles[0]
@@ -180,15 +200,23 @@ try{
  if($profile.backup_dir -notmatch '^(\.f1ru-v24-build[0-9]+|\.f1ru-v25-[a-f0-9]{64})$'){throw 'Неверный профиль резервной копии.'}
  AssertClosed
  $backup=Inside $profile.backup_dir;$statePath=Inside ($profile.backup_dir+'\state.json');$pendingPath=Inside ($profile.backup_dir+'\pending.json')
- [IO.Directory]::CreateDirectory($backup)|Out-Null
- $lock=[IO.File]::Open((Inside ($profile.backup_dir+'\operation.lock')),'OpenOrCreate','ReadWrite','None')
- RecoverPending
+ if($Action -eq 'prepare'){
+  # Compatibility inspection never creates a backup/lock or recovers transactions.
+  # Installation revalidates all resources under its exclusive operation lock.
+  if(Test-Path -LiteralPath $pendingPath){throw '[RECOVERY_REQUIRED] Предыдущая установка прервана. Выберите «Вернуть оригинал» и подтвердите запрос Windows; затем повторите проверку.'}
+  $existingLock=Inside ($profile.backup_dir+'\operation.lock')
+  if([IO.File]::Exists($existingLock)){$lock=[IO.File]::Open($existingLock,'Open','Read','Read')}
+ }else{
+  [IO.Directory]::CreateDirectory($backup)|Out-Null
+  $lock=[IO.File]::Open((Inside ($profile.backup_dir+'\operation.lock')),'OpenOrCreate','ReadWrite','None')
+  RecoverPending
+ }
  $protected=@{}
  foreach($p in $profile.protected.PSObject.Properties){$h=Hash (Inside $p.Name);if($h -notin @($p.Value)){
   if(!$profile.micro_compatibility){throw ('Файл не соответствует профилю совместимости; исходный файл сохранён: '+$p.Name)}
   if(!(ValidPublisher (Inside $p.Name) $profile.micro_compatibility.publisher_organization)){throw ('Подпись обновлённого файла не прошла проверку: '+$p.Name)}
   if($p.Name -eq 'F1_25.exe' -and !(HeaderCompatible $profile (Inside $p.Name))){throw 'Индекс игровых ресурсов изменён.'}
-  Write-Output ('COMPATIBILITY PASS; обновлённый подписанный файл сохранён: '+$p.Name)
+  Emit ('COMPATIBILITY PASS; обновлённый подписанный файл сохранён: '+$p.Name)
  };$protected[$p.Name]=$h}
  # Inventory only: optional components retain their original presence and bytes.
  # Current Steam/EA profile guards above remain unchanged and mandatory.
@@ -219,8 +247,8 @@ try{
   if(Test-Path -LiteralPath $p){$h=Hash $p;if($h -notin $allowed){throw ('Файл изменён другим инструментом: '+$file.target)}}
  }
  if($Action -ne 'restore'){foreach($p in $m.payload.PSObject.Properties){if((Hash (Payload $p.Name)) -ne $p.Value){throw ('Комплект повреждён: '+$p.Name)}}}
- Write-Output ('PROFILE game='+$gameVersion+' records='+$languageRecords+' text='+$languageVersion+' channel='+$textChannel)
- if($Action -eq 'prepare'){Write-Output ('TRANSLATION '+$Translation+'; SHA256 '+$languageHash);Write-Output 'PREPARE PASS; комплект и сборка совместимы. Отдельные русские шрифты; исходные шрифты, EXE и античит сохраняются.';exit 0}
+ Emit ('PROFILE game='+$gameVersion+' records='+$languageRecords+' text='+$languageVersion+' channel='+$textChannel)
+ if($Action -eq 'prepare'){Emit ('TRANSLATION '+$Translation+'; SHA256 '+$languageHash);Emit 'PREPARE PASS; комплект и сборка совместимы. Отдельные русские шрифты; исходные шрифты, EXE и античит сохраняются.';$script:EngineExit=0;exit 0}
  $txnName='.f1ru-transaction-'+[guid]::NewGuid().ToString('N');$txn=Inside $txnName;[IO.Directory]::CreateDirectory($txn)|Out-Null
  # Recover exact stock only from known complete input hashes and locally packaged patch bytes.
  if(!(Test-Path -LiteralPath $original)){
@@ -275,10 +303,28 @@ try{
  }finally{
   if(!$committed){RecoverPending}
  }
- if($Action -eq 'install'){Write-Output ('TRANSLATION '+$Translation+'; SHA256 '+$languageHash);Write-Output 'INSTALL PASS; русский текст и отдельные шрифты установлены; исходные шрифты, озвучка, EXE и античит не изменены.'}else{Write-Output 'RESTORE PASS; исходный game.dat и шрифты восстановлены; добавленные шрифты и два файла русского текста удалены; озвучка, EXE и античит не изменены.'}
- exit 0
-}catch{Write-Output ('ОШИБКА: '+$_.Exception.Message);exit 1}
-finally{
- if($txnName -and $pendingPath -and !(Test-Path -LiteralPath $pendingPath)){try{CleanupTxn $txnName}catch{Write-Output ('Операция завершена; временные файлы сохранены: '+$_.Exception.Message)}}
- if($lock){$lock.Dispose()}
+ if($Action -eq 'install'){Emit ('TRANSLATION '+$Translation+'; SHA256 '+$languageHash);Emit 'INSTALL PASS; русский текст и отдельные шрифты установлены; исходные шрифты, озвучка, EXE и античит не изменены.'}else{Emit 'RESTORE PASS; исходный game.dat и шрифты восстановлены; добавленные шрифты и два файла русского текста удалены; озвучка, EXE и античит не изменены.'}
+ $script:EngineExit=0;exit 0
+}catch{
+ $message=$_.Exception.Message
+ if($message.StartsWith('[RECOVERY_REQUIRED]',[StringComparison]::Ordinal)){$script:EngineExit=3}
+ else{
+  $cause=$_.Exception
+  while($cause){if($cause -is [UnauthorizedAccessException]){$script:EngineExit=5;break};$cause=$cause.InnerException}
+  if($script:EngineExit-eq5){$message='[ACCESS_DENIED] Windows отклонила доступ к папке игры. Файлы не удаляйте: проверьте права выбранной учётной записи и журнал защиты. '+$message}
+ }
+ Emit ('ОШИБКА: '+$message);exit $script:EngineExit
 }
+finally{
+ if($txnName -and $pendingPath -and !(Test-Path -LiteralPath $pendingPath)){try{CleanupTxn $txnName}catch{Emit ('Операция завершена; временные файлы сохранены: '+$_.Exception.Message)}}
+ if($lock){$lock.Dispose()}
+ if($destination){
+  [void](ResultDestination $destination)
+  $result=[ordered]@{schema=1;action=$Action;gamePath=[IO.Path]::GetFullPath($GamePath).TrimEnd('\');translation=$Translation;exitCode=$script:EngineExit;output=($script:EngineMessages -join "`r`n")}
+  $bytes=[Text.Encoding]::UTF8.GetBytes(($result|ConvertTo-Json -Compress))
+  if($bytes.Length-gt1048576){throw 'Ответ установки превысил допустимый размер.'}
+  $stream=[IO.File]::Open($destination,'CreateNew','Write','None')
+  try{$stream.Write($bytes,0,$bytes.Length);$stream.Flush($true)}finally{$stream.Dispose()}
+ }
+}
+

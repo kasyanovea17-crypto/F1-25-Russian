@@ -35,7 +35,7 @@ def main():
 
     manifest_path = ROOT / 'manifest.base.json'
     manifest = json.loads(manifest_path.read_text('utf-8-sig'))
-    check(manifest['version'] == '0.33.1', 'manifest version033')
+    check(manifest['version'] == '0.33.2', 'manifest version033')
     matching = [p for p in manifest['native_profiles'] if p['exe_sha256'] == STEAM_EXE]
     check(len(matching) == 1 and matching[0]['game_version'] == '1.26' and
           matching[0].get('platform', 'steam') == 'steam', 'one exact Steam126 profile')
@@ -60,14 +60,22 @@ def main():
     old = "  if(!$profile.micro_compatibility -or !(ValidPublisher (Inside $p.Name) $profile.micro_compatibility.publisher_organization)){throw ('Подпись обновлённого файла не прошла проверку: '+$p.Name)}"
     new = "  if(!$profile.micro_compatibility){throw ('Файл не соответствует профилю совместимости; исходный файл сохранён: '+$p.Name)}\n  if(!(ValidPublisher (Inside $p.Name) $profile.micro_compatibility.publisher_organization)){throw ('Подпись обновлённого файла не прошла проверку: '+$p.Name)}"
     check(engine.count(new) == 1, 'exact diagnostic split present once')
-    check(digest(engine.replace(new, old).encode('utf-8')) == OLD_ENGINE_NORMALIZED_SHA,
-          'all other engine code and verification remain unchanged')
+    # The old whole-file checksum is intentionally superseded: prepare and IPC
+    # changed in 0.33.2. Keep the actual path/patch/recovery/publisher rules pinned.
+    import re
+    guard_functions = ['Inside', 'Payload', 'Patch', 'ValidateJournal', 'RecoverPending', 'ValidPublisher', 'HeaderCompatible', 'ResolveMicroArchive']
+    protected_source = '\n'.join(re.search(r'(?ms)^function ' + name +
+        r'\b.*?(?=^function |^\$lock=)', engine.replace('Emit ', 'Write-Output ')).group(0).strip()
+        for name in guard_functions)
+    check(digest(protected_source.encode('utf-8')) == '9e3aa103f512b20d655df8d5336374dc46d6622982a4cd3ae3f172e42123d6ea',
+          'path, patch, recovery, publisher and archive validation rules unchanged')
     begin = engine.index(' $protected=@{}\n')
     end = engine.index(' # Inventory only:', begin)
     guard = engine[begin:end]
     fixture = r'''$ErrorActionPreference='Stop'
 $script:HashCalls=0;$script:PublisherCalls=0;$script:HeaderCalls=0
 function Inside([string]$name){return $name}
+function Emit([string]$text){Write-Output $text}
 function Hash([string]$name){$script:HashCalls++;if($script:Unknown){return ('b'*64)};return ('a'*64)}
 function ValidPublisher([string]$file,[string]$organization){$script:PublisherCalls++;return $script:Publisher}
 function HeaderCompatible($profile,[string]$file){$script:HeaderCalls++;return $script:Header}
@@ -103,7 +111,7 @@ Write-Output ('PROTECTED_GUARD_FIXTURES_PASS checks='+$checks+' matrix_cases=48 
     check(result.returncode == 0 and 'PROTECTED_GUARD_FIXTURES_PASS checks=66 matrix_cases=48' in result.stdout,
           'actual guard pure fixture matrix')
     launcher = (ROOT / 'Launcher.cs').read_text('utf-8-sig')
-    check('Text="F1 25 · На русском · 0.33.1 · новый интерфейс"' in launcher, 'UI release version')
+    check('Text="F1 25 · На русском · 0.33.2 · новый интерфейс"' in launcher, 'UI release version')
     check('"Голос инженера · выбор озвучки"' in launcher and 'engineerVoiceButton.Click+=(a,e)=>ShowEngineerVoiceChild();' in launcher,
           'engineer choice exposed')
     child = launcher[launcher.index(' void ShowEngineerVoiceChild(){'):launcher.index('\n void RefreshVoice()', launcher.index(' void ShowEngineerVoiceChild(){'))]

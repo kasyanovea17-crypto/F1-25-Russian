@@ -47,9 +47,12 @@ function Result([string]$Status,[string]$Code,[string]$Message,[int]$Exit,[bool]
  [ordered]@{schema=1;status=$Status;code=$Code;message=$Message;installed=$Installed;canInstall=$CanInstall;canRestore=$CanRestore;gameRunning=$running;testOnly=$true;maxSlots=192;pronunciationReview=18;gameplayTested=$false;backup=$backup;targetHash=$current;expectedHash=$fullHash}|ConvertTo-Json -Depth 6 -Compress
  exit $Exit
 }
+function Get-RunningGameProcesses{
+ try{Get-Process -ErrorAction Stop | Where-Object { @('F1_25','F1_25_dx12') -icontains $_.ProcessName }}catch{throw ('Не удалось проверить, запущена ли F1 25: '+$_.Exception.Message)}
+}
 function GameClosed{
  if($fixture){Need (-not [IO.File]::Exists((Join-Path $FixtureRoot 'game.running'))) 'F1 25 is running.';return}
- Need (@(Get-Process -ErrorAction SilentlyContinue|Where-Object {$_.ProcessName -like 'F1_25*'}).Count -eq 0) 'Close F1 25 before changing its audio.'
+ Need (@(Get-RunningGameProcesses).Count -eq 0) 'Close F1 25 before changing its audio.'
 }
 function BackupPath($S){return Checked (Join-Path (Join-Path (Join-Path $installDir 'transactions') $S.transaction) 'original.nfs')}
 function LoadState{
@@ -126,12 +129,12 @@ try{
  $target=Checked (Join-Path $game 'audio\2025\speech\en_drivers.nfs');Need ([IO.File]::Exists($target)) 'English driver audio bank is missing.'
  Need ((Get-Item -LiteralPath $target).Length -gt 256 -and (Get-Item -LiteralPath $target).Length -le 268435456) 'Driver audio size rejected.'
  $identity=HashBytes ($utf8.GetBytes($game.ToUpperInvariant()))
- if($fixture){$FixtureRoot=Checked $FixtureRoot;Need (Within $game $FixtureRoot) 'Fixture game must be inside FixtureRoot.';$stateRoot=Checked (Join-Path $FixtureRoot 'state');$running=[IO.File]::Exists((Join-Path $FixtureRoot 'game.running'))}
- else{$stateRoot=Checked (Join-Path $env:ProgramData 'Karsvein\F1MaxVoice');$running=@(Get-Process -ErrorAction SilentlyContinue|Where-Object {$_.ProcessName -like 'F1_25*'}).Count -gt 0}
+ if($fixture){$FixtureRoot=Checked $FixtureRoot;Need (Within $game $FixtureRoot) 'Fixture game must be inside FixtureRoot.';Need ([IO.File]::ReadAllText((Join-Path $game 'F1_25.exe'),$utf8) -ceq "INERT MAX VOICE TEST FIXTURE - NEVER EXECUTE`n") 'Fixture mode requires an inert executable marker; a real game is rejected.';$stateRoot=Checked (Join-Path $FixtureRoot 'state');$running=[IO.File]::Exists((Join-Path $FixtureRoot 'game.running'))}
+ else{$stateRoot=Checked (Join-Path $env:ProgramData 'Karsvein\F1MaxVoice');$running=@(Get-RunningGameProcesses).Count -gt 0}
  $installDir=Checked (Join-Path (Join-Path $stateRoot 'installations') $identity);$stateFile=Checked (Join-Path $installDir 'state.json')
  if($Action -in @('install','restore')){
   GameClosed
-  if(-not $fixture){$principal=New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent());Need ($principal.IsInRole('Administrator')) 'Administrator approval is required to change game audio.'}
+  if(-not $fixture){$principal=New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent());Need ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) 'Для изменения озвучки подтвердите запрос Windows с учётной записью администратора.'}
   [void][IO.Directory]::CreateDirectory($installDir);$lock=[IO.File]::Open((Checked (Join-Path $installDir '.lock')),'OpenOrCreate','ReadWrite','None')
  }
  $state=LoadState;$current=Hash $target
