@@ -48,7 +48,7 @@ Need ($process.ExitCode-eq0) 'Native launcher self-test failed.'
 Get-Content -LiteralPath $result
 $sums=@($names|Where-Object{$_-ne'SHA256SUMS.txt'}|ForEach-Object{(Hash (Join-Path $out $_.Replace('/','\')))+'  '+$_})
 [IO.File]::WriteAllLines((Join-Path $out 'SHA256SUMS.txt'),$sums,(New-Object Text.UTF8Encoding($false)))
-Write-Output ('PACKAGE_STAGE_PASS launcher=0.33.2 files='+$names.Count+' profiles=1.18,1.20,1.24,1.26 game_writes=0')
+Write-Output ('PACKAGE_STAGE_PASS launcher=0.33.2 files='+$names.Count+' profiles=1.18,1.20,1.24,1.26,1.27 game_writes=0')
 if($PackageOnly){return}
 & (Join-Path $r 'single_exe\source\Build-SingleExe.ps1') -PackageDirectory $out -OutputExe $exe -Version $version -AllowList $allow -EnableTextUpdates
 Need ($LASTEXITCODE-eq0) 'Single EXE build failed.'

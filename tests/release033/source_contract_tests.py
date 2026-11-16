@@ -37,6 +37,10 @@ def main():
     manifest_path = ROOT / 'manifest.base.json'
     manifest = json.loads(manifest_path.read_text('utf-8-sig'))
     check(manifest['version'] == '0.33.2', 'manifest version033')
+    new_profiles = [p for p in manifest['native_profiles'] if p.get('game_version') == '1.27']
+    check(len(new_profiles) == 1, 'one exact Steam127 profile')
+    check(digest(json.dumps(new_profiles[0], ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')) == '539bb2ce0183d67ec0edd423cb0c17a11d9aebc187535121dc411af69b1dda51', 'Steam127 exact audited resource profile')
+    manifest['native_profiles'].remove(new_profiles[0])
     matching = [p for p in manifest['native_profiles'] if p['exe_sha256'] == STEAM_EXE]
     check(len(matching) == 1 and matching[0]['game_version'] == '1.26' and
           matching[0].get('platform', 'steam') == 'steam', 'one exact Steam126 profile')

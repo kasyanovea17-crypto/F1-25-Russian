@@ -1,0 +1,285 @@
+{
+  "changed_field": "Product.Name; Japanese/EFIGS font paths, asset IDs, sizes and group references",
+  "game_version": "1.27.0",
+  "profile_id": "v25",
+  "original_sha256": "a9ba34ba392fe5e3c78949619666267d76746d522691426bedde1e5666afa7ec",
+  "modified_sha256": "9c93b8251d0c6f576c2e346247edb47a789da2837f7e2da4fedb2d434986cdec",
+  "exe_sha256": "46009bd31f49d93a92d73cbd0b66131d2b37964a92da7293168d3c3a872d9389",
+  "dat_bytes": 170184448,
+  "patches": [
+    {
+      "offset": 87778240,
+      "before": "7a4f2af13a58dafc594ea01fffcd9364",
+      "after": "33e8587f9a6a526135df64ac179bf4c3"
+    },
+    {
+      "offset": 89802080,
+      "before": "1e1788b0bbec9fb92e268152ac9a4ca5",
+      "after": "57b3f742e14989cccee4f316d301eb94"
+    },
+    {
+      "offset": 89948752,
+      "before": "c959a384f93724e3900c537fae11cad1",
+      "after": "b51c25470e11b9ee73526792309986a6"
+    },
+    {
+      "offset": 92588752,
+      "before": "2d4b894b9b91ca86f24f47c26d74362f",
+      "after": "e4f037b0d6c2b8ecc6eef696c485204e"
+    },
+    {
+      "offset": 93185232,
+      "before": "ffdb6fde462a8b60e97f9e32f1cf8794",
+      "after": "57ec0416db2708b9344d8636d758beed"
+    },
+    {
+      "offset": 93448016,
+      "before": "774e0d4843dfbfe6dc42e741541fa323",
+      "after": "f5c6c02579793a28c791a4488933f901"
+    },
+    {
+      "offset": 94044496,
+      "before": "1fee860a76fcdd55fbd357f939978d95",
+      "after": "729a133e1b9cdaf57fbb83cdf6586a3f"
+    },
+    {
+      "offset": 94396240,
+      "before": "aa83a41fb96a93a5e70b28e7d18800e1",
+      "after": "5f8a880cd1f15faba9ded3825b3990d1"
+    },
+    {
+      "offset": 96635456,
+      "before": "7d56ff4633abfa8cef831e1ac31f3300",
+      "after": "9243e0f26b5126529e4edadda3fb912b"
+    }
+  ],
+  "critical_ranges": [
+    {
+      "entry": 3453,
+      "path": "system/config.xml",
+      "offset": 87684480,
+      "length": 83712,
+      "sha256": "b3d34dc8c6c603d539c2c403b2e9ee13d3fe3cfe3cae1ece06aeb5f9b6b3c458"
+    },
+    {
+      "entry": 3457,
+      "path": "system/config_sku.xml",
+      "offset": 87778048,
+      "length": 3072,
+      "sha256": "4a05ebdd381460c3c52f4bab6828e4a8fd44b1a385c5222f5a088e96e04eddff"
+    },
+    {
+      "entry": 3486,
+      "path": "system/ui_render_config.xml",
+      "offset": 89313280,
+      "length": 8704,
+      "sha256": "df638e008cedc426bef6f931c131a676f157b1dbfb46cb8f3b13697267d670eb"
+    },
+    {
+      "entry": 3494,
+      "path": "f1_2025.manifest",
+      "offset": 89451392,
+      "length": 8135808,
+      "sha256": "22d5a544ee2d8e55a2f800d3f629dcd493e10158e43d705b1d4c2486ae29349e"
+    }
+  ],
+  "manifest_edits": [
+    {
+      "offset": 497364,
+      "format": "<Q",
+      "before": 4327163448594560670,
+      "after": 7407250778125804620,
+      "field": "fonts_japanese.erp.group_reference"
+    },
+    {
+      "offset": 3733848,
+      "format": "<Q",
+      "before": 4327163448594560670,
+      "after": 7407250778125804620,
+      "field": "fonts_japanese.erp.asset_id"
+    },
+    {
+      "offset": 4593116,
+      "format": "<I",
+      "before": 2754291,
+      "after": 3207519,
+      "field": "fonts_japanese.erp.size"
+    },
+    {
+      "offset": 7184072,
+      "format": "<H",
+      "before": 17450,
+      "after": 20727,
+      "field": "fonts_japanese.erp.path"
+    },
+    {
+      "offset": 350692,
+      "format": "<Q",
+      "before": 1927151402486170303,
+      "after": 18066313661762500390,
+      "field": "fonts_efigs_r_p.erp.group_reference"
+    },
+    {
+      "offset": 3137368,
+      "format": "<Q",
+      "before": 1927151402486170303,
+      "after": 18066313661762500390,
+      "field": "fonts_efigs_r_p.erp.asset_id"
+    },
+    {
+      "offset": 3996636,
+      "format": "<I",
+      "before": 766376,
+      "after": 3848436,
+      "field": "fonts_efigs_r_p.erp.size"
+    },
+    {
+      "offset": 4944862,
+      "format": "<H",
+      "before": 34360,
+      "after": 37111,
+      "field": "fonts_efigs_r_p.erp.path"
+    }
+  ],
+  "assets_checked": 107408,
+  "resource_entries_checked": 6017,
+  "changed_resources": [
+    "system/config_sku.xml",
+    "f1_2025.manifest"
+  ],
+  "changed_assets": [
+    {
+      "before_path": "2025_asset_groups/ui_package/fonts_efigs_r_p.erp",
+      "after_path": "2025_asset_groups/ui_package/fonts_russian_r_p.erp",
+      "before_size": 766376,
+      "after_size": 3848436
+    },
+    {
+      "before_path": "2025_asset_groups/ui_package/fonts_japanese.erp",
+      "after_path": "2025_asset_groups/ui_package/fonts_russian.erp",
+      "before_size": 2754291,
+      "after_size": 3207519
+    }
+  ],
+  "font_payloads": {
+    "fonts_russian.erp": {
+      "bytes": 3207519,
+      "sha256": "31ef1c1a5067bcd88cc54febcbfe48999e151b8e82dcc63903559f1576922a44"
+    },
+    "fonts_russian_r_p.erp": {
+      "bytes": 3848436,
+      "sha256": "bc4554d1e5c13b594a34409fb79bc677f2257ae74fdbf3de2ef52819ef72732b"
+    }
+  },
+  "game_runtime": "NOT_TESTED",
+  "exe_executed": false,
+  "source_files_written": false,
+  "text_binding": "1.26/1.27 English resource identical SHA256; same stable 56134-record text",
+  "protected_files_not_supplied": [],
+  "profile_match_contract": "Exact EXE, original/installed DAT and protected-file hashes; no new micro fallback",
+  "english_sha256": "29002463f001586129983e77940c99ddb7d2db6117fdb5e8e29a1a8d0a07be00",
+  "new_profile": {
+    "steam_build": "26566308",
+    "exe_sha256": "46009bd31f49d93a92d73cbd0b66131d2b37964a92da7293168d3c3a872d9389",
+    "dat_original": "a9ba34ba392fe5e3c78949619666267d76746d522691426bedde1e5666afa7ec",
+    "dat_installed": "9c93b8251d0c6f576c2e346247edb47a789da2837f7e2da4fedb2d434986cdec",
+    "accepted_dat": [],
+    "backup_dir": ".f1ru-v25-a9ba34ba392fe5e3c78949619666267d76746d522691426bedde1e5666afa7ec",
+    "patches": [
+      {
+        "offset": 87778240,
+        "before": "7a4f2af13a58dafc594ea01fffcd9364",
+        "after": "33e8587f9a6a526135df64ac179bf4c3"
+      },
+      {
+        "offset": 89802080,
+        "before": "1e1788b0bbec9fb92e268152ac9a4ca5",
+        "after": "57b3f742e14989cccee4f316d301eb94"
+      },
+      {
+        "offset": 89948752,
+        "before": "c959a384f93724e3900c537fae11cad1",
+        "after": "b51c25470e11b9ee73526792309986a6"
+      },
+      {
+        "offset": 92588752,
+        "before": "2d4b894b9b91ca86f24f47c26d74362f",
+        "after": "e4f037b0d6c2b8ecc6eef696c485204e"
+      },
+      {
+        "offset": 93185232,
+        "before": "ffdb6fde462a8b60e97f9e32f1cf8794",
+        "after": "57ec0416db2708b9344d8636d758beed"
+      },
+      {
+        "offset": 93448016,
+        "before": "774e0d4843dfbfe6dc42e741541fa323",
+        "after": "f5c6c02579793a28c791a4488933f901"
+      },
+      {
+        "offset": 94044496,
+        "before": "1fee860a76fcdd55fbd357f939978d95",
+        "after": "729a133e1b9cdaf57fbb83cdf6586a3f"
+      },
+      {
+        "offset": 94396240,
+        "before": "aa83a41fb96a93a5e70b28e7d18800e1",
+        "after": "5f8a880cd1f15faba9ded3825b3990d1"
+      },
+      {
+        "offset": 96635456,
+        "before": "7d56ff4633abfa8cef831e1ac31f3300",
+        "after": "9243e0f26b5126529e4edadda3fb912b"
+      }
+    ],
+    "protected": {
+      "F1_25.exe": [
+        "46009bd31f49d93a92d73cbd0b66131d2b37964a92da7293168d3c3a872d9389"
+      ],
+      "EAAntiCheat.GameServiceLauncher.exe": [
+        "b8c1df3cd45f362df88c5a5aa3aeca23e06be1a48c09b292bede7aedf2d87a0d"
+      ],
+      "EAAntiCheat.cfg": [
+        "a470ffdb8b308a896eea300fa0224940ee3d3df1bd7c277a94402ad91d6530f5"
+      ]
+    },
+    "stock_files": {
+      "2025_asset_groups\\ui_package\\fonts_japanese.erp": "a60f5a509f2fdb22ef4e5530652ef5386a065e48f75e6eeab243d32e7dada413",
+      "2025_asset_groups\\ui_package\\fonts_efigs_r_p.erp": "6fcd0415d4c1ca48b83dfd3137487844847457347bb72fed2ec421ca38c897d7"
+    },
+    "install_files": [
+      {
+        "target": "2025_asset_groups\\ui_package\\fonts_russian.erp",
+        "payload": "fonts_russian.erp",
+        "sha256": "31ef1c1a5067bcd88cc54febcbfe48999e151b8e82dcc63903559f1576922a44",
+        "previous_sha256": [
+          "69d6abfa33ffa02ed618f615e2460dbd3d10f8ae59c4cff2262a39fadf28a522"
+        ]
+      },
+      {
+        "target": "2025_asset_groups\\ui_package\\fonts_russian_r_p.erp",
+        "payload": "fonts_russian_r_p.erp",
+        "sha256": "bc4554d1e5c13b594a34409fb79bc677f2257ae74fdbf3de2ef52819ef72732b",
+        "previous_sha256": [
+          "270d4ca359958915fa69c942f51b0933cf5c04fc587f2a8df1891ed00ac1fba7",
+          "49f786c9f63d75d91d51fc1e5fe108b94456e3b3c1b5e3d0e0ca8a81363baf4c",
+          "37da5a02d51bb32f44b20c96a2bb17f1d28a1bfb77657cec524074e881099347",
+          "2324bd4571906609389c944e04c2c0dfea6e244df7d28cd1304a09844ad88ce4"
+        ]
+      },
+      {
+        "target": "localisation\\2025_russian\\language_jap.lng",
+        "payload": "language.lng",
+        "sha256": "96b28cbdbb82508b66c6ccc6c829501561237895d9c622512e169d5e66022161"
+      },
+      {
+        "target": "localisation\\2025_russian\\language_eng.lng",
+        "payload": "language.lng",
+        "sha256": "96b28cbdbb82508b66c6ccc6c829501561237895d9c622512e169d5e66022161"
+      }
+    ],
+    "platform": "steam",
+    "build_label": "Steam 1.27.0 / build 26566308",
+    "game_version": "1.27"
+  }
+}

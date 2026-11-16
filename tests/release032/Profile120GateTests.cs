@@ -14,7 +14,7 @@ class GameTextProfileTests {
   File.WriteAllText(Path.Combine(game,"F1_25.exe"),"STATIC IDENTITY FIXTURE "+id);
   File.WriteAllText(Path.Combine(home,"payload","language.lng"),"PAYLOAD SENTINEL");
   var profile=new Dictionary<string,object>{{"exe_sha256",unknown?new string('0',64):Updates.Hash(Path.Combine(game,"F1_25.exe"))},{"game_version",version}};
-  if(version!="1.26")profile["language_set"]=version;
+  if(version!="1.26"&&version!="1.27")profile["language_set"]=version;
   File.WriteAllText(Path.Combine(home,"manifest.json"),json.Serialize(new Dictionary<string,object>{{"native_profiles",new object[]{profile}}}));fetches=engineCalls=0;
  }
  static string Snapshot(){var files=Directory.GetFiles(home,"*",SearchOption.AllDirectories);Array.Sort(files,StringComparer.Ordinal);var text=new StringBuilder();foreach(string file in files)text.Append(file.Substring(home.Length)).Append(' ').Append(Updates.Hash(file)).Append('\n');return text.ToString();}
@@ -58,6 +58,18 @@ class GameTextProfileTests {
   Reject(()=>GameTextProfiles.Parse("PROFILE game=1.20 records=55991 text=0.15.6.120 channel=stable",context,"russian"),"1.20 stable channel rejected");
   Reject(()=>GameTextProfiles.Parse("PROFILE game=1.26 records=55991 text=0.15.6.120 channel=stable",context,"russian"),"1.20 count not accepted as stable");
   Reject(()=>GameTextProfiles.Parse("PROFILE game=1.20 records=55991 text=0.15.6.120 channel=pinned\r\nPROFILE game=1.20 records=55991 text=0.15.6.120 channel=pinned",context,"russian"),"duplicate 1.20 profile line rejected");
+  foreach(bool install in new[]{false,true}){
+   Setup("current127-"+install,"1.27",false);Reject(()=>Apply(install),"1.27 reaches fetch sentinel");Check(fetches==1&&File.Exists(Path.Combine(home,"update.lock")),"1.27 stable accepted");
+  }
+  foreach(string variant in new[]{"russian","original_names"}){
+   var current127=GameTextProfiles.Parse("PROFILE game=1.27 records=56134 text=0.15.6 channel=stable",context,variant);
+   Check(current127.GameVersion=="1.27"&&current127.Stable,"1.27 stable parsed");
+   Check(current127.Matches(context,variant)&&!current127.Matches(context+"-other",variant),"1.27 context binding");
+  }
+  Reject(()=>GameTextProfiles.Parse("PROFILE game=1.27 records=55991 text=0.15.6 channel=stable",context,"russian"),"1.27 wrong count");
+  Reject(()=>GameTextProfiles.Parse("PROFILE game=1.27 records=56134 text=0.15.6 channel=pinned",context,"russian"),"1.27 wrong channel");
+  Reject(()=>GameTextProfiles.Parse("PROFILE game=1.28 records=56134 text=0.15.6 channel=stable",context,"russian"),"future unknown version rejected");
+  Reject(()=>GameTextProfiles.Parse("PROFILE game=1.27 records=56134 text=0.15.6 channel=stable\r\nPROFILE game=1.27 records=56134 text=0.15.6 channel=stable",context,"russian"),"duplicate1.27 rejected");
   Reject(()=>GameTextProfiles.Parse("PREPARE PASS",context,"russian"),"missing profile");
   Console.WriteLine("PROFILE_GATE_PASS checks="+checks+" legacy_fetch_calls=0 unknown_fetch_calls=0 rejected_lock_writes=0 real_game_writes=false");
 #endif

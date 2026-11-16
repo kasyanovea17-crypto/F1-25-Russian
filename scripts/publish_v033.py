@@ -140,11 +140,11 @@ def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--publish',action='store_true');args=parser.parse_args()
  ci=json.loads((ROOT/'dist/release-ci-result.json').read_text(encoding='utf-8-sig'));version='0.33.2';built=ROOT/'dist'/('F1_25_RU_v'+version+'.exe');assetdir=ROOT/'dist'/('publication-assets-'+version);exe=assetdir/ASSET_NAME
  need(ci['status']=='PASS' and ci['version']==version and ci['files']==len([n for n in (ROOT/'.release/package-v0.33.txt').read_text(encoding='utf-8-sig').splitlines() if n]),'CI did not verify 0.33.2')
- for key,count in {'ui_checks':205,'speech_ui_checks':48,'max_ui_checks':52,'engineer_ui_checks':41,'profile_checks':68,'footer_checks':390,'deep_state_checks':80,'layout_states':27,'startup_checks':80,'source_contract_checks':82,'engineer_transaction_checks':27,'engineer_process_checks':44,'engineer_privilege_checks':43,'diagnostic_core_checks':43,'diagnostic_ui_checks':46,'diagnostic_voice_checks':59,'diagnostic_text_checks':19}.items():need(ci.get(key)==count,'CI gate differs: '+key)
+ for key,count in {'ui_checks':205,'speech_ui_checks':48,'max_ui_checks':52,'engineer_ui_checks':41,'profile_checks':80,'footer_checks':390,'deep_state_checks':80,'layout_states':27,'startup_checks':80,'source_contract_checks':84,'engineer_transaction_checks':27,'engineer_process_checks':44,'engineer_privilege_checks':43,'diagnostic_core_checks':43,'diagnostic_ui_checks':46,'diagnostic_voice_checks':59,'diagnostic_text_checks':19}.items():need(ci.get(key)==count,'CI gate differs: '+key)
  need(ci['discovery_checks']+ci['discovery_symlink_skips']==87 and ci['context_checks']+ci['context_symlink_skips']==42,'Discovery/context tests differ')
  need(ci['single_exe_verified'] and ci['launch_context_verified'] and ci['installed_game_written'] is False and ci['registry_written'] is False,'CI isolation failed')
  need(ci['single_exe_checks']==50 and ci['rollback_verified'] is True and ci['actual_updater_integration'] is True,'Single-EXE rollback/updater gate failed')
- need(ci['game_profiles']==['1.18','1.20','1.24','1.26'] and ci['text_version']=='0.15.6' and ci['original_names_version']=='0.15.6.1','Compatibility/text changed')
+ need(ci['game_profiles']==['1.18','1.20','1.24','1.26','1.27'] and ci['text_version']=='0.15.6' and ci['original_names_version']=='0.15.6.1','Compatibility/text changed')
  need(ci['sha256']==digest(built) and ci['bytes']==built.stat().st_size,'CI artifact changed')
  assetdir.mkdir(parents=True,exist_ok=True)
  if exe.exists():need(digest(exe)==ci['sha256'],'Preserve existing differently hashed publication file')

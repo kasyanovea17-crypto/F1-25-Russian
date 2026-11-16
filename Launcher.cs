@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -21,7 +21,7 @@ static class TextEngineBridge {
  static void NoLinks(string path){string cursor=Path.GetFullPath(path);while(!String.IsNullOrEmpty(cursor)){if((File.Exists(cursor)||Directory.Exists(cursor))&&(File.GetAttributes(cursor)&FileAttributes.ReparsePoint)!=0)throw new IOException("Ссылка в пути установки отклонена: "+cursor);cursor=Path.GetDirectoryName(cursor);}}
  internal sealed class RuntimeLease:IDisposable {
   readonly List<FileStream> streams=new List<FileStream>();
-  static readonly string[,] Pins=new string[,]{{"Engine.ps1","a43f2ad25359edc56851042c16406dd816a06193e3d28bed3919943fe548c06f"},{"Compatibility.cs","b033a17999d2781f333b300afc0645c0e72aa54a632ea481fcd37ed68e61c3f0"}};
+  static readonly string[,] Pins=new string[,]{{"Engine.ps1","60ecd8156783899e42c5d820d77320f0c7c294981feca5c04fc4e3abbb4193ad"},{"Compatibility.cs","b033a17999d2781f333b300afc0645c0e72aa54a632ea481fcd37ed68e61c3f0"}};
   FileStream Hold(string home,string relative,long maximum){
    string full=Path.GetFullPath(Path.Combine(home,relative));if(!full.StartsWith(Path.GetFullPath(home).TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase))throw new IOException("Файл вышел из папки комплекта.");NoLinks(full);
    var stream=new FileStream(full,FileMode.Open,FileAccess.Read,FileShare.Read);streams.Add(stream);if(stream.Length<=0||stream.Length>maximum)throw new IOException("Размер файла комплекта не прошёл проверку: "+relative);return stream;
@@ -31,7 +31,7 @@ static class TextEngineBridge {
    Mutation(action);
    for(int n=0;n<Pins.GetLength(0);n++)if(Hash(Hold(home,Pins[n,0],4194304))!=Pins[n,1])throw new IOException("Модуль установки изменён. Переоткройте исходный комплект: "+Pins[n,0]);
    Hold(home,"manifest.json",262144);var manifest=Updates.Read(Path.Combine(home,"manifest.json"));object raw;
-   if(Updates.InstallContractHash(manifest)!="d104225306a389c8d90b08ddba9ce3726b0120ec63ba6cfb40e4d15651d6f6a1")throw new InvalidDataException("Описание установки изменено. Переоткройте исходный комплект лаунчера.");
+   if(Updates.InstallContractHash(manifest)!="0b098f7458f5abb24ec4fc4512ec5c22a8735ff86631a23ce359458c8c8f9b99")throw new InvalidDataException("Описание установки изменено. Переоткройте исходный комплект лаунчера.");
    Updates.ValidateMutableText(manifest,"0.15.6","96b28cbdbb82508b66c6ccc6c829501561237895d9c622512e169d5e66022161",new string[]{"8b39a89c1b88a7b4fead950e5ade103e4f0905ac38d19bb41376575488dd3347","d4c577bdc47540bd32f17c5f63045afd92445d41cad1cd9ddce4150e940db78d","1cf0970adfdf681b0d6e6a0501943106de2f010c241dad6f846143242d760c94","5b1a60cb2295794104144e3e40630b2472883ec1f077e261cd3f7852d81e9d7f","8c06bf5882fb185b4864f8e412f2de6d8bd6eb5087e88c99626113b489fee6fa","1dbf258f4707857fd37414f680dcdd54167ca89b4d0f6b4f99a40f32740d13e8","cfe0a0bb5db47707c9822572c62fcf206d351a9f2cef82a999777c449aac905e","6a3b951d07d3b77dfdced827e0d1422dfa49bc82868c5101075153a7ef84fe7e","e121be4a39a786c8e28a64fd190bf17e2a02b68140b1b28adcae81eee9da1c05","1f6c91f1cc7d1ffa13508e74ca08e65d504f8288f5fa98208794372c788e112b","45199bc7188adabce90453509bdab95b1fcfa2f41ad5092a859f815f105a50cb"});
    if(action=="restore")return; // Restore reads verified game backups, not installation payloads.
    if(!manifest.TryGetValue("payload",out raw)||!(raw is Dictionary<string,object>))throw new InvalidDataException("В комплекте отсутствует список ресурсов.");
@@ -344,7 +344,7 @@ sealed partial class Launcher : Form {
   });
  }
  static void RecordReportFailure(Exception ex){string operation=SupportDiagnostics.Begin("diagnostics","export","");SupportDiagnostics.End(operation,-1,"Сохранение отчёта прервано.",ex);}
- void BuildAbout(){var p=Page("about","О проекте",450);LabelAt(p,"F1 25 — русский текст и субтитры\nАвтор и разработчик: Karsvein\nЛаунчер 0.33.2 · новый интерфейс\n\nТочные профили: 1.18, 1.20, 1.24, 1.26.\nШрифт входит в этот EXE.\nШтатные шрифты, EXE и античит не меняются.\nЗамечания к переводу: EDITORIAL_NOTES.json.",24,79,512,218,11,FontStyle.Regular,muted);var git=ButtonAt(p,"GitHub · исходный код и релизы",24,304,512,40,false,0xf3ed);git.Click+=(a,e)=>OpenContact(TextUpdate.Repository);
+ void BuildAbout(){var p=Page("about","О проекте",450);LabelAt(p,"F1 25 — русский текст и субтитры\nАвтор и разработчик: Karsvein\nЛаунчер 0.33.2 · новый интерфейс\n\nТочные профили: 1.18, 1.20, 1.24, 1.26, 1.27.\nШрифт входит в этот EXE.\nШтатные шрифты, EXE и античит не меняются.\nЗамечания к переводу: EDITORIAL_NOTES.json.",24,79,512,218,11,FontStyle.Regular,muted);var git=ButtonAt(p,"GitHub · исходный код и релизы",24,304,512,40,false,0xf3ed);git.Click+=(a,e)=>OpenContact(TextUpdate.Repository);
   ContactAt(p,"Telegram",24,366,0xf5b3,TelegramUrl);ContactAt(p,"Steam",200,366,0xf6c1,SteamUrl);ContactAt(p,"Почта",376,366,0xf32c,MailUrl);
  }
  void ContactAt(Control parent,string title,int x,int y,int glyph,string url){var b=ButtonAt(parent,title,x,y,160,40,false,glyph);contactTips.SetToolTip(b,url);b.Click+=(a,e)=>OpenContact(url);}

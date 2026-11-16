@@ -30,7 +30,7 @@ static class Updates {
   foreach(object item in (IEnumerable)raw){
    var profile=(Dictionary<string,object>)item;object value;
    if(profile.TryGetValue("language_set",out value)&&!String.IsNullOrEmpty(Convert.ToString(value)))continue;
-   if(profile.TryGetValue("game_version",out value)&&Convert.ToString(value)!="1.26")continue;
+   if(profile.TryGetValue("game_version",out value)&&Convert.ToString(value)!="1.26"&&Convert.ToString(value)!="1.27")continue;
    if(!profile.TryGetValue("install_files",out raw))continue;
    foreach(object file in (IEnumerable)raw){var entry=(Dictionary<string,object>)file;
     if(entry.TryGetValue("payload",out value)&&Convert.ToString(value)=="language.lng")yield return entry;

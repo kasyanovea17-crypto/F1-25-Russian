@@ -163,7 +163,7 @@ try{
  # Resolve text only after the game's EXE and DAT have selected one resource
  # profile. Hash history, variant switching and transaction recovery are scoped
  # to that profile's language set; 1.18/1.20/1.24/1.26 text is never interchangeable.
- $selectedSet=$m;$gameVersion='1.26';$textChannel='stable'
+ $selectedSet=$m;$gameVersion='1.26';if($profile.game_version){$gameVersion=[string]$profile.game_version};$textChannel='stable'
  $languageRecords=56134;if($m.language_records){$languageRecords=[int]$m.language_records}
  if($languageRecords -ne 56134){throw 'Неверный набор строк текущего канала перевода.'}
  $languageVersion=[string]$m.text_version
@@ -177,7 +177,7 @@ try{
   $russianPayload='language-'+$setId+'.lng';$namesPayload='language-'+$setId+'-original-names.lng'
   if($selectedSet.payload -cne $russianPayload){throw 'Неверный маршрут версионного перевода.'}
   $gameVersion=$setId;$textChannel='pinned';$languageRecords=[int]$selectedSet.records;$languageVersion=[string]$selectedSet.version
- }elseif($profile.game_version -and $profile.game_version -cne '1.26'){throw 'Профиль игры не связан с набором текста.'}
+ }elseif($profile.game_version -and $profile.game_version -notin @('1.26','1.27')){throw 'Профиль игры не связан с набором текста.'}
  if($selectedSet.lng -notmatch '^[0-9a-f]{64}$'){throw 'Повреждена сумма основного перевода.'}
  $languageHash=[string]$selectedSet.lng;$languagePayload=$russianPayload
  $allowedLanguageHashes=@($selectedSet.lng)+@($selectedSet.previous_lng)

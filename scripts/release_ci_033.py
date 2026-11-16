@@ -34,7 +34,7 @@ def hook(exe,flag,name):
 def validate_contract():
  m=read(PACKAGE/'manifest.json');need(m['version']==VERSION,'Manifest version mismatch')
  need(m['text_version']=='0.15.6' and m['translation_variants']['original_names']['version']=='0.15.6.1','Text versions changed')
- need(set(p.get('game_version','1.26') for p in m['native_profiles'])=={'1.18','1.20','1.24','1.26'},'Profile set changed')
+ need(set(p.get('game_version','1.26') for p in m['native_profiles'])=={'1.18','1.20','1.24','1.26','1.27'},'Profile set changed')
  legacy=[p for p in m['native_profiles'] if p.get('game_version')=='1.20']
  need(len(legacy)==1 and legacy[0].get('language_set')=='1.20' and not legacy[0].get('micro_compatibility'),'Exact 1.20 profile missing')
  need(m['language_sets']['1.20']['records']==55991 and m['language_sets']['1.20']['version']=='0.15.6.120','Pinned 1.20 text changed')
@@ -76,12 +76,12 @@ def main():
  run('ENGINEER_PRIVILEGE_GUARD',[PS,'-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',ROOT/'tests/release033/EngineerPrivilegeTests.ps1','-SourceRoot',ROOT,'-Output',REPORTS/'ENGINEER_PRIVILEGE.json'])
  privilege_guard=read(REPORTS/'ENGINEER_PRIVILEGE.json');need(privilege_guard['status']=='PASS' and privilege_guard['checks']==43 and privilege_guard['elevatedResult'] is True and privilege_guard['nonElevatedResult'] is False and privilege_guard['gameWrites'] is False,'Privilege guard regressions');counts['engineer_privilege_checks']=43
  run('SOURCE_CONTRACTS',[sys.executable,ROOT/'tests/release033/source_contract_tests.py','--work',REPORTS/'source-contracts033'])
- contracts=read(REPORTS/'source-contracts033/artifact.json');need(contracts['status']=='PASS' and contracts['checks']==82,'Source contract regressions');counts['source_contract_checks']=82
+ contracts=read(REPORTS/'source-contracts033/artifact.json');need(contracts['status']=='PASS' and contracts['checks']==84,'Source contract regressions');counts['source_contract_checks']=84
  for flag,name,key,count in [('--self-test','UI','ui_checks',205),('--speech-self-test','SPEECH_UI','speech_ui_checks',48),('--max-voice-self-test','MAX_UI','max_ui_checks',52),('--engineer-voice-self-test','ENGINEER_UI','engineer_ui_checks',41)]:
   _,text=hook(PACKAGE/'Launcher.exe',flag,'NATIVE_'+name);match=re.search(r'checks=(\d+)',text)
   need(match and int(match[1])==count,'Unexpected '+name+' result');counts[key]=count;native.append(text.strip())
  profile=compile_test('ReleaseProfileTests',[TESTS/'Profile120GateTests.cs',ROOT/'Updater.cs',ROOT/'GameTextProfiles.cs',ROOT/'TranslationVariants.cs'])
- text=run('PROFILE_GATES',[profile,REPORTS/'profile-fixtures']);need('PROFILE_GATE_PASS checks=68' in text,'Profile gate count');counts['profile_checks']=68
+ text=run('PROFILE_GATES',[profile,REPORTS/'profile-fixtures']);need('PROFILE_GATE_PASS checks=80' in text,'Profile gate count');counts['profile_checks']=80
  discovery=compile_test('ReleaseDiscoveryTests',[TESTS/'GameLocationTests.cs',ROOT/'GameLocation.cs']);output=REPORTS/'DISCOVERY.json'
  run('DISCOVERY',[discovery,REPORTS/'discovery-fixtures',output]);data=read(output)
  need(data['result']=='GAME_LOCATION_PASS' and data['checks']+data['skippedSymlinkTests']==87,'Discovery cases changed')
@@ -114,7 +114,7 @@ def main():
  voice=read(REPORTS/'engineer033/voice-tests.json')
  need(voice['status']=='PASS' and voice['checks']==27 and voice['rollback_exact'] is True and voice['real_game_writes'] is False and voice['registry_writes'] is False and voice['game_execution'] is False,'Engineer language transaction regressions')
  counts['engineer_transaction_checks']=27
- (PACKAGE/'UI_VERIFICATION.txt').write_text('\n'.join(native)+'\nDeep-state80; footer390; profiles68; layout27; discovery/context results recorded by release CI.\nVisual screenshots and live game tests remain pending.\n',encoding='utf-8')
+ (PACKAGE/'UI_VERIFICATION.txt').write_text('\n'.join(native)+'\nDeep-state80; footer390; profiles80; layout27; discovery/context results recorded by release CI.\nVisual screenshots and live game tests remain pending.\n',encoding='utf-8')
  names=[name for name in (ROOT/'.release/package-v0.33.txt').read_text(encoding='utf-8-sig').splitlines() if name]
  (PACKAGE/'SHA256SUMS.txt').write_text('\n'.join(digest(PACKAGE/name)+'  '+name for name in names if name!='SHA256SUMS.txt')+'\n',encoding='utf-8')
  run('SINGLE_EXE_BUILD',[PS,'-NoProfile','-ExecutionPolicy','Bypass','-File',ROOT/'single_exe/source/Build-SingleExe.ps1','-PackageDirectory',PACKAGE,'-OutputExe',EXE,'-Version',VERSION,'-AllowList',ROOT/'.release/package-v0.33.txt','-EnableTextUpdates'])
@@ -135,6 +135,6 @@ def main():
  for name,expected in source_runtime_pins.items():
   source=ROOT/('manifest.base.json' if name=='manifest.json' else name)
   need(digest(source)==expected,'Runtime source changed during CI: '+name)
- result=dict(status='PASS',version=VERSION,**counts,files=PACKAGE_FILES,single_exe_verified=True,launch_context_verified=True,rollback_verified=single['rollbackCopyRestored'],actual_updater_integration=single['actualUpdaterIntegration'],sha256=digest(EXE),bytes=EXE.stat().st_size,installed_game_written=False,registry_written=False,text_version=m['text_version'],original_names_version=m['translation_variants']['original_names']['version'],game_profiles=['1.18','1.20','1.24','1.26'],visual_comparison='pending',live_game_test='not performed')
+ result=dict(status='PASS',version=VERSION,**counts,files=PACKAGE_FILES,single_exe_verified=True,launch_context_verified=True,rollback_verified=single['rollbackCopyRestored'],actual_updater_integration=single['actualUpdaterIntegration'],sha256=digest(EXE),bytes=EXE.stat().st_size,installed_game_written=False,registry_written=False,text_version=m['text_version'],original_names_version=m['translation_variants']['original_names']['version'],game_profiles=['1.18','1.20','1.24','1.26','1.27'],visual_comparison='pending',live_game_test='not performed')
  (ROOT/'dist/release-ci-result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8');print('CI_VERIFY_PASS '+json.dumps(result,separators=(',',':')),flush=True)
 if __name__=='__main__':main()

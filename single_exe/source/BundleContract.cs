@@ -68,7 +68,7 @@ internal static class BundleRules {
   object raw;if(!manifest.TryGetValue("native_profiles",out raw))yield break;var profiles=raw as IEnumerable;Need(profiles!=null,"Неверные профили установки.");
   foreach(object item in profiles){var profile=item as Dictionary<string,object>;Need(profile!=null,"Неверный профиль установки.");object value;
    if(profile.TryGetValue("language_set",out value)&&!String.IsNullOrEmpty(Convert.ToString(value)))continue;
-   if(profile.TryGetValue("game_version",out value)&&Convert.ToString(value)!="1.26")continue;
+   if(profile.TryGetValue("game_version",out value)&&Convert.ToString(value)!="1.26"&&Convert.ToString(value)!="1.27")continue;
    if(!profile.TryGetValue("install_files",out raw))continue;
    foreach(object file in (IEnumerable)raw){var entry=file as Dictionary<string,object>;Need(entry!=null,"Неверный файл профиля.");if(entry.TryGetValue("payload",out value)&&Convert.ToString(value)=="language.lng")yield return entry;}
   }
