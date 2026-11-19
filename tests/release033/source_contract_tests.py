@@ -39,6 +39,13 @@ def main():
     check(manifest['version'] == '0.33.2', 'manifest version033')
     new_profiles = [p for p in manifest['native_profiles'] if p.get('game_version') == '1.27']
     check(len(new_profiles) == 1, 'one exact Steam127 profile')
+    # Permit exactly one additional official launcher in exactly this profile.
+    ea_127_new = 'fd6fe2849ac3ded893af219407657e3bd8995fbebc38b5a63cb58976e2791a25'
+    ea_127_launchers = new_profiles[0]['protected']['EAAntiCheat.GameServiceLauncher.exe']
+    check(ea_127_launchers == [EA_REVISIONS[-1], ea_127_new], 'Steam127 exact original and updated EA launchers')
+    check(json.dumps(manifest).count(ea_127_new) == 1, 'updated EA launcher scoped only to Steam127')
+    # Normalize this one field before comparing the entire previous audited profile.
+    ea_127_launchers.pop()
     check(digest(json.dumps(new_profiles[0], ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')) == '539bb2ce0183d67ec0edd423cb0c17a11d9aebc187535121dc411af69b1dda51', 'Steam127 exact audited resource profile')
     manifest['native_profiles'].remove(new_profiles[0])
     matching = [p for p in manifest['native_profiles'] if p['exe_sha256'] == STEAM_EXE]
