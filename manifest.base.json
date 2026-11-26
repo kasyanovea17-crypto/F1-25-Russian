@@ -977,6 +977,115 @@
       "platform": "steam",
       "build_label": "Steam 1.27.0 / build 26566308",
       "game_version": "1.27"
+    },
+    {
+      "steam_build": "",
+      "exe_sha256": "8361a266d7aa1f43bdb35da89ccfe66010901e43dddd44b6d5cb8c9f090a99f7",
+      "dat_original": "227964f1d584628d190b608e264ea426647c7024dea86f891b35a2a7f9111802",
+      "dat_installed": "1e461dc5446b289b051ae69f8898d6a4bee0f06aa161f273e304b55e9e3f457b",
+      "accepted_dat": [],
+      "backup_dir": ".f1ru-v25-227964f1d584628d190b608e264ea426647c7024dea86f891b35a2a7f9111802",
+      "patches": [
+        {
+          "offset": 87778240,
+          "before": "7a4f2af13a58dafc594ea01fffcd9364",
+          "after": "33e8587f9a6a526135df64ac179bf4c3"
+        },
+        {
+          "offset": 89784144,
+          "before": "91186e04a6a67e54b8f087aab08b49d2",
+          "after": "3dd4f5bc2fd37f32ab56fd6148131510"
+        },
+        {
+          "offset": 89839104,
+          "before": "8b9367b05b4e3763d9c3efb462cb0090",
+          "after": "bd12c8149b9314e4f7b45b227db1546f"
+        },
+        {
+          "offset": 89839120,
+          "before": "50fbd791f14659b43af2917d8bdb080f",
+          "after": "155badc39ab9a5d6a01d3a827baeb5b7"
+        },
+        {
+          "offset": 92588752,
+          "before": "2d4b894b9b91ca86f24f47c26d74362f",
+          "after": "e4f037b0d6c2b8ecc6eef696c485204e"
+        },
+        {
+          "offset": 93185216,
+          "before": "ffdb6fde462a8b60e97f9e32f1cf8794",
+          "after": "57ec0416db2708b9344d8636d758beed"
+        },
+        {
+          "offset": 93448000,
+          "before": "7a645e6348903d457923044d8e3b0c79",
+          "after": "b92051976551d74c922a899685f1f52d"
+        },
+        {
+          "offset": 94044464,
+          "before": "338d5c2d2eb9817145285fd53adf3cfc",
+          "after": "d8afa67e8b6ee429d79c632105e8a4bc"
+        },
+        {
+          "offset": 94396192,
+          "before": "aa83a41fb96a93a5e70b28e7d18800e1",
+          "after": "5f8a880cd1f15faba9ded3825b3990d1"
+        },
+        {
+          "offset": 96635392,
+          "before": "b554ed5d7356191743fb7454f742f891",
+          "after": "4882bbb2efb4d7e101c24451b3d00702"
+        }
+      ],
+      "stock_files": {
+        "2025_asset_groups\\ui_package\\fonts_japanese.erp": "a60f5a509f2fdb22ef4e5530652ef5386a065e48f75e6eeab243d32e7dada413",
+        "2025_asset_groups\\ui_package\\fonts_efigs_r_p.erp": "6fcd0415d4c1ca48b83dfd3137487844847457347bb72fed2ec421ca38c897d7"
+      },
+      "install_files": [
+        {
+          "target": "2025_asset_groups\\ui_package\\fonts_russian.erp",
+          "payload": "fonts_russian.erp",
+          "sha256": "31ef1c1a5067bcd88cc54febcbfe48999e151b8e82dcc63903559f1576922a44",
+          "previous_sha256": [
+            "69d6abfa33ffa02ed618f615e2460dbd3d10f8ae59c4cff2262a39fadf28a522"
+          ]
+        },
+        {
+          "target": "2025_asset_groups\\ui_package\\fonts_russian_r_p.erp",
+          "payload": "fonts_russian_r_p.erp",
+          "sha256": "bc4554d1e5c13b594a34409fb79bc677f2257ae74fdbf3de2ef52819ef72732b",
+          "previous_sha256": [
+            "270d4ca359958915fa69c942f51b0933cf5c04fc587f2a8df1891ed00ac1fba7",
+            "49f786c9f63d75d91d51fc1e5fe108b94456e3b3c1b5e3d0e0ca8a81363baf4c",
+            "37da5a02d51bb32f44b20c96a2bb17f1d28a1bfb77657cec524074e881099347",
+            "2324bd4571906609389c944e04c2c0dfea6e244df7d28cd1304a09844ad88ce4"
+          ]
+        },
+        {
+          "target": "localisation\\2025_russian\\language_jap.lng",
+          "payload": "language.lng",
+          "sha256": "96b28cbdbb82508b66c6ccc6c829501561237895d9c622512e169d5e66022161"
+        },
+        {
+          "target": "localisation\\2025_russian\\language_eng.lng",
+          "payload": "language.lng",
+          "sha256": "96b28cbdbb82508b66c6ccc6c829501561237895d9c622512e169d5e66022161"
+        }
+      ],
+      "platform": "ea",
+      "build_label": "EA app 1.27.0 / 1.0.145.2472",
+      "game_version": "1.27",
+      "protected": {
+        "F1_25.exe": [
+          "8361a266d7aa1f43bdb35da89ccfe66010901e43dddd44b6d5cb8c9f090a99f7"
+        ],
+        "EAAntiCheat.GameServiceLauncher.exe": [
+          "fd6fe2849ac3ded893af219407657e3bd8995fbebc38b5a63cb58976e2791a25"
+        ],
+        "EAAntiCheat.cfg": [
+          "a470ffdb8b308a896eea300fa0224940ee3d3df1bd7c277a94402ad91d6530f5"
+        ]
+      }
     }
   ],
   "audio_mode": {

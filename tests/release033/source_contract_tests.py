@@ -37,6 +37,18 @@ def main():
     manifest_path = ROOT / 'manifest.base.json'
     manifest = json.loads(manifest_path.read_text('utf-8-sig'))
     check(manifest['version'] == '0.33.2', 'manifest version033')
+    ea_profiles = [p for p in manifest['native_profiles'] if p.get('game_version') == '1.27' and p.get('platform') == 'ea']
+    check(len(ea_profiles) == 1, 'one exact EA app 1.27 profile')
+    ea = ea_profiles[0]
+    check(ea['exe_sha256'] == '8361a266d7aa1f43bdb35da89ccfe66010901e43dddd44b6d5cb8c9f090a99f7' and
+          sum(p['exe_sha256'] == ea['exe_sha256'] for p in manifest['native_profiles']) == 1 and
+          not ea.get('micro_compatibility') and ea['accepted_dat'] == [], 'EA app 1.27 exact pair only')
+    check(ea['protected'] == {'F1_25.exe': [ea['exe_sha256']],
+          'EAAntiCheat.GameServiceLauncher.exe': ['fd6fe2849ac3ded893af219407657e3bd8995fbebc38b5a63cb58976e2791a25'],
+          'EAAntiCheat.cfg': ['a470ffdb8b308a896eea300fa0224940ee3d3df1bd7c277a94402ad91d6530f5']}, 'EA app 1.27 authentic reference protection only')
+    check(digest(json.dumps(ea, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')) ==
+          '8d1ff97479bd11197204f927709182fa77276e1199a46affe1556e233e1807f5', 'EA app 1.27 exact audited resource profile')
+    manifest['native_profiles'].remove(ea)
     new_profiles = [p for p in manifest['native_profiles'] if p.get('game_version') == '1.27']
     check(len(new_profiles) == 1, 'one exact Steam127 profile')
     # Permit exactly one additional official launcher in exactly this profile.
