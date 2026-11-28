@@ -76,7 +76,7 @@ def main():
  run('ENGINEER_PRIVILEGE_GUARD',[PS,'-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',ROOT/'tests/release033/EngineerPrivilegeTests.ps1','-SourceRoot',ROOT,'-Output',REPORTS/'ENGINEER_PRIVILEGE.json'])
  privilege_guard=read(REPORTS/'ENGINEER_PRIVILEGE.json');need(privilege_guard['status']=='PASS' and privilege_guard['checks']==43 and privilege_guard['elevatedResult'] is True and privilege_guard['nonElevatedResult'] is False and privilege_guard['gameWrites'] is False,'Privilege guard regressions');counts['engineer_privilege_checks']=43
  run('SOURCE_CONTRACTS',[sys.executable,ROOT/'tests/release033/source_contract_tests.py','--work',REPORTS/'source-contracts033'])
- contracts=read(REPORTS/'source-contracts033/artifact.json');need(contracts['status']=='PASS' and contracts['checks']==90,'Source contract regressions');counts['source_contract_checks']=90
+ contracts=read(REPORTS/'source-contracts033/artifact.json');need(contracts['status']=='PASS' and contracts['checks']==92,'Source contract regressions');counts['source_contract_checks']=92
  for flag,name,key,count in [('--self-test','UI','ui_checks',205),('--speech-self-test','SPEECH_UI','speech_ui_checks',48),('--max-voice-self-test','MAX_UI','max_ui_checks',52),('--engineer-voice-self-test','ENGINEER_UI','engineer_ui_checks',41)]:
   _,text=hook(PACKAGE/'Launcher.exe',flag,'NATIVE_'+name);match=re.search(r'checks=(\d+)',text)
   need(match and int(match[1])==count,'Unexpected '+name+' result');counts[key]=count;native.append(text.strip())

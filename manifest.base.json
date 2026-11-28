@@ -1080,11 +1080,15 @@
           "8361a266d7aa1f43bdb35da89ccfe66010901e43dddd44b6d5cb8c9f090a99f7"
         ],
         "EAAntiCheat.GameServiceLauncher.exe": [
-          "fd6fe2849ac3ded893af219407657e3bd8995fbebc38b5a63cb58976e2791a25"
+          "fd6fe2849ac3ded893af219407657e3bd8995fbebc38b5a63cb58976e2791a25",
+          "a7e72cc8c390e8a9036d4663d45cab7411a15217a9ebf04ad163b82548c4e136"
         ],
         "EAAntiCheat.cfg": [
           "a470ffdb8b308a896eea300fa0224940ee3d3df1bd7c277a94402ad91d6530f5"
         ]
+      },
+      "protected_signatures": {
+        "EAAntiCheat.GameServiceLauncher.exe": "Electronic Arts, Inc."
       }
     }
   ],

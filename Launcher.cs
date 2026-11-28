@@ -21,7 +21,7 @@ static class TextEngineBridge {
  static void NoLinks(string path){string cursor=Path.GetFullPath(path);while(!String.IsNullOrEmpty(cursor)){if((File.Exists(cursor)||Directory.Exists(cursor))&&(File.GetAttributes(cursor)&FileAttributes.ReparsePoint)!=0)throw new IOException("Ссылка в пути установки отклонена: "+cursor);cursor=Path.GetDirectoryName(cursor);}}
  internal sealed class RuntimeLease:IDisposable {
   readonly List<FileStream> streams=new List<FileStream>();
-  static readonly string[,] Pins=new string[,]{{"Engine.ps1","60ecd8156783899e42c5d820d77320f0c7c294981feca5c04fc4e3abbb4193ad"},{"Compatibility.cs","b033a17999d2781f333b300afc0645c0e72aa54a632ea481fcd37ed68e61c3f0"}};
+  static readonly string[,] Pins=new string[,]{{"Engine.ps1","ba23b4a66eaca3dcfd8d1476f5ceb6ecedf71d1eaf0b83eaafca846fda8d3e7d"},{"Compatibility.cs","b033a17999d2781f333b300afc0645c0e72aa54a632ea481fcd37ed68e61c3f0"}};
   FileStream Hold(string home,string relative,long maximum){
    string full=Path.GetFullPath(Path.Combine(home,relative));if(!full.StartsWith(Path.GetFullPath(home).TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase))throw new IOException("Файл вышел из папки комплекта.");NoLinks(full);
    var stream=new FileStream(full,FileMode.Open,FileAccess.Read,FileShare.Read);streams.Add(stream);if(stream.Length<=0||stream.Length>maximum)throw new IOException("Размер файла комплекта не прошёл проверку: "+relative);return stream;
@@ -31,7 +31,7 @@ static class TextEngineBridge {
    Mutation(action);
    for(int n=0;n<Pins.GetLength(0);n++)if(Hash(Hold(home,Pins[n,0],4194304))!=Pins[n,1])throw new IOException("Модуль установки изменён. Переоткройте исходный комплект: "+Pins[n,0]);
    Hold(home,"manifest.json",262144);var manifest=Updates.Read(Path.Combine(home,"manifest.json"));object raw;
-   if(Updates.InstallContractHash(manifest)!="024a35a8f9a7f7e425a39d7414d30d70b598eefa0f7603d370030e58da208756")throw new InvalidDataException("Описание установки изменено. Переоткройте исходный комплект лаунчера.");
+   if(Updates.InstallContractHash(manifest)!="96f5e9c3f73416510fb612fe377918cdc7b1e78d47594bfffa8306ae5c914fa3")throw new InvalidDataException("Описание установки изменено. Переоткройте исходный комплект лаунчера.");
    Updates.ValidateMutableText(manifest,"0.15.6","96b28cbdbb82508b66c6ccc6c829501561237895d9c622512e169d5e66022161",new string[]{"8b39a89c1b88a7b4fead950e5ade103e4f0905ac38d19bb41376575488dd3347","d4c577bdc47540bd32f17c5f63045afd92445d41cad1cd9ddce4150e940db78d","1cf0970adfdf681b0d6e6a0501943106de2f010c241dad6f846143242d760c94","5b1a60cb2295794104144e3e40630b2472883ec1f077e261cd3f7852d81e9d7f","8c06bf5882fb185b4864f8e412f2de6d8bd6eb5087e88c99626113b489fee6fa","1dbf258f4707857fd37414f680dcdd54167ca89b4d0f6b4f99a40f32740d13e8","cfe0a0bb5db47707c9822572c62fcf206d351a9f2cef82a999777c449aac905e","6a3b951d07d3b77dfdced827e0d1422dfa49bc82868c5101075153a7ef84fe7e","e121be4a39a786c8e28a64fd190bf17e2a02b68140b1b28adcae81eee9da1c05","1f6c91f1cc7d1ffa13508e74ca08e65d504f8288f5fa98208794372c788e112b","45199bc7188adabce90453509bdab95b1fcfa2f41ad5092a859f815f105a50cb"});
    if(action=="restore")return; // Restore reads verified game backups, not installation payloads.
    if(!manifest.TryGetValue("payload",out raw)||!(raw is Dictionary<string,object>))throw new InvalidDataException("В комплекте отсутствует список ресурсов.");

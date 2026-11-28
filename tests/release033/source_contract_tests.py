@@ -44,10 +44,13 @@ def main():
           sum(p['exe_sha256'] == ea['exe_sha256'] for p in manifest['native_profiles']) == 1 and
           not ea.get('micro_compatibility') and ea['accepted_dat'] == [], 'EA app 1.27 exact pair only')
     check(ea['protected'] == {'F1_25.exe': [ea['exe_sha256']],
-          'EAAntiCheat.GameServiceLauncher.exe': ['fd6fe2849ac3ded893af219407657e3bd8995fbebc38b5a63cb58976e2791a25'],
+          'EAAntiCheat.GameServiceLauncher.exe': ['fd6fe2849ac3ded893af219407657e3bd8995fbebc38b5a63cb58976e2791a25', 'a7e72cc8c390e8a9036d4663d45cab7411a15217a9ebf04ad163b82548c4e136'],
           'EAAntiCheat.cfg': ['a470ffdb8b308a896eea300fa0224940ee3d3df1bd7c277a94402ad91d6530f5']}, 'EA app 1.27 authentic reference protection only')
     check(digest(json.dumps(ea, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')) ==
-          '8d1ff97479bd11197204f927709182fa77276e1199a46affe1556e233e1807f5', 'EA app 1.27 exact audited resource profile')
+          '9b57eff097335547bbdcdd2a0f90b0e395bd5e8b6366b8db8ae286ac03a8a015', 'EA app 1.27 exact audited resource profile')
+    check(ea['protected_signatures'] == {'EAAntiCheat.GameServiceLauncher.exe': 'Electronic Arts, Inc.'} and
+          sum('protected_signatures' in p for p in manifest['native_profiles']) == 1 and
+          json.dumps(manifest).count('a7e72cc8c390e8a9036d4663d45cab7411a15217a9ebf04ad163b82548c4e136') == 1, 'EA app 1.27 exclusive exact-hash plus signer gate')
     manifest['native_profiles'].remove(ea)
     new_profiles = [p for p in manifest['native_profiles'] if p.get('game_version') == '1.27']
     check(len(new_profiles) == 1, 'one exact Steam127 profile')
@@ -93,6 +96,11 @@ def main():
         for name in guard_functions)
     check(digest(protected_source.encode('utf-8')) == '9e3aa103f512b20d655df8d5336374dc46d6622982a4cd3ae3f172e42123d6ea',
           'path, patch, recovery, publisher and archive validation rules unchanged')
+    gate = engine.index(' $signatureHold=OpenExactPublisherGuard $profile')
+    check(engine.count(' $signatureHold=OpenExactPublisherGuard $profile') == 1 and
+          gate < engine.index('  [IO.Directory]::CreateDirectory($backup)') and
+          engine.count(' if($signatureHold){$signatureHold.Dispose()}') == 1,
+          'publisher gate runs before install and handle is always released')
     begin = engine.index(' $protected=@{}\n')
     end = engine.index(' # Inventory only:', begin)
     guard = engine[begin:end]

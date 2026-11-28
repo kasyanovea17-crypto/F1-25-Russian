@@ -127,6 +127,29 @@ function ValidPublisher([string]$file,[string]$organization){
  # Match the exact organization RDN, not an arbitrary substring or a certificate name.
  return $sig.SignerCertificate.Subject -match ('(?:^|,\s*)O="'+[regex]::Escape($organization)+'"(?:,|$)')
 }
+function OpenExactPublisherGuard($profile){
+ if($null -eq $profile.protected_signatures){return}
+ $name='EAAntiCheat.GameServiceLauncher.exe'
+ $rules=@($profile.protected_signatures.PSObject.Properties)
+ if($profile.platform -cne 'ea' -or $profile.game_version -cne '1.27' -or $profile.micro_compatibility -or
+    $rules.Count -ne 1 -or $rules[0].Name -cne $name -or $rules[0].Value -cne 'Electronic Arts, Inc.'){
+  throw 'Неверное описание обязательной проверки подписи EA.'
+ }
+ $file=Inside $name
+ # Read-only sharing keeps the exact inspected bytes stable until the transaction exits.
+ $held=[IO.File]::OpenRead($file)
+ try{
+  $h=Hash $file
+  if($h -cnotin @($profile.protected.$name)){
+   throw ('Файл не соответствует профилю совместимости; исходный файл сохранён: '+$name)
+  }
+  if(!(ValidPublisher $file $rules[0].Value)){
+   throw ('Подпись файла EA не прошла проверку; исходный файл сохранён: '+$name)
+  }
+  if((Hash $file) -cne $h){throw 'Файл EA изменился во время проверки; повторите операцию.'}
+  return $held
+ }catch{$held.Dispose();throw}
+}
 function HeaderCompatible($p,[string]$file){
  if(!$p.micro_compatibility -or $p.micro_compatibility.schema -ne 1){return $false}
  LoadCompatibility
@@ -144,7 +167,7 @@ function ResolveMicroArchive {
  $profile.backup_dir='.f1ru-v25-'+$result[0]
  Emit 'COMPATIBILITY PASS; изменены посторонние данные, ресурсы перевода совпадают. Резервная копия привязана к текущему архиву.'
 }
-$lock=$null;$txn=$null;$txnName=$null;$pendingPath=$null
+$lock=$null;$txn=$null;$txnName=$null;$pendingPath=$null;$signatureHold=$null
 try{
  $root=(Resolve-Path -LiteralPath $GamePath).Path.TrimEnd('\')
  if($TestMode -and !$root.StartsWith(([IO.Path]::GetFullPath($PSScriptRoot)+'\test-game'),[StringComparison]::OrdinalIgnoreCase)){throw 'Тестовый режим разрешён только для изолированной тестовой папки лаунчера.'}
@@ -199,6 +222,8 @@ try{
  if($languageVersion -notmatch '^\d+(?:\.\d+){1,3}$'){throw 'Неверная версия набора текста.'}
  if($profile.backup_dir -notmatch '^(\.f1ru-v24-build[0-9]+|\.f1ru-v25-[a-f0-9]{64})$'){throw 'Неверный профиль резервной копии.'}
  AssertClosed
+ $signatureHold=OpenExactPublisherGuard $profile
+ if($signatureHold){Emit 'EA_SIGNATURE PASS; файл соответствует профилю, подпись EA подтверждена.'}
  $backup=Inside $profile.backup_dir;$statePath=Inside ($profile.backup_dir+'\state.json');$pendingPath=Inside ($profile.backup_dir+'\pending.json')
  if($Action -eq 'prepare'){
   # Compatibility inspection never creates a backup/lock or recovers transactions.
@@ -318,6 +343,7 @@ try{
 finally{
  if($txnName -and $pendingPath -and !(Test-Path -LiteralPath $pendingPath)){try{CleanupTxn $txnName}catch{Emit ('Операция завершена; временные файлы сохранены: '+$_.Exception.Message)}}
  if($lock){$lock.Dispose()}
+ if($signatureHold){$signatureHold.Dispose()}
  if($destination){
   [void](ResultDestination $destination)
   $result=[ordered]@{schema=1;action=$Action;gamePath=[IO.Path]::GetFullPath($GamePath).TrimEnd('\');translation=$Translation;exitCode=$script:EngineExit;output=($script:EngineMessages -join "`r`n")}
